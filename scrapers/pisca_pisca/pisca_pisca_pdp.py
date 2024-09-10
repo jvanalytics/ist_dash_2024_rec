@@ -15,7 +15,7 @@ def crawl(link):
     try:
         response = requests.get(link, headers=headers)
         soup = bs(response.text, 'html')
-        print(soup)
+
         # Extract SKU from URL which is the last part after slash
         try:
             sku = re.search(r'/([^/]+)$', link).group(1)
