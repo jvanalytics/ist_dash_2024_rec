@@ -4,7 +4,7 @@ import scrapy
 class ResultsPageSpider(scrapy.Spider):
     name = "results_page"
     allowed_domains = ["auto24.com"]
-    start_urls = ["https://www.autoscout24.com/lst?atype=C&desc=0&sort=standard&page=1"]
+    start_urls = [f"https://www.autoscout24.com/lst?atype=C&desc=0&sort=standard&page={page}" for page in range(1, 22)]
 
     def parse(self, response):
         article_list=response.css('article')
@@ -51,4 +51,12 @@ class ResultsPageSpider(scrapy.Spider):
                         # Add more fields as needed
                     }
 
-        pass
+
+        # Extract the current page number from the URL
+        current_page = int(response.url.split('page=')[-1])
+
+        # If the current page number is less than 20, generate the next page URL
+        if current_page < 22:
+            next_page_number = current_page + 1
+            next_page_url = f"https://www.autoscout24.com/lst?atype=C&desc=0&sort=standard&page={next_page_number}"
+            yield scrapy.Request(url=next_page_url, callback=self.parse)
