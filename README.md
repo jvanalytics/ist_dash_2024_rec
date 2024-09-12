@@ -17,6 +17,7 @@ It will use 3 out of the following datasets:
     - based on ecommerce events (product page view, add to cart, purchase) + catalogue of the store.
     - 285M events although partitioned by year/months periods
     - class target should be purchase or add to cart. Research dataset.
+    - It can be considered unbalanced since generally only less than 5% buy something from a store
 
 
 2. Amazon|Aliexpress|Shein|Temu ratings (✅ but research dataset or scrape) 
@@ -28,6 +29,8 @@ It will use 3 out of the following datasets:
         - analyze if we can do with 3 classes: bad, neutral and good.
         - can detect fraudulent or good products.
     - Dataset Example: https://www.kaggle.com/datasets/sayedmahmoud/amazanreviewscor5
+    - Dataset https://nijianmo.github.io/amazon/index.html
+    - Dataset https://amazon-reviews-2023.github.io/
 
 3. Google Analytics Sample Dataset Merchandise Store (investigate dataset export and values)
     - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
