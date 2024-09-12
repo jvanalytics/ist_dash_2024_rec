@@ -25,5 +25,8 @@ The project uses three datasets:
     - predictive model to classify rating of product (without or low number of ratings) as positive or negative.
     - can detect fraudulent or good products.
     - analyze if we can do with 3 classes: bad, neutral and good.
+    - Dataset Example: https://www.kaggle.com/datasets/sayedmahmoud/amazanreviewscor5
 
-3. Research dataset with car industry
+3. Google Analytics Sample Dataset (Merchandise Store)
+    - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
+    - interesting example on returning https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
