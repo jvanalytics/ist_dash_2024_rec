@@ -1,7 +1,0 @@
-
-scrapy notes:
-- input in terminal on project folder "folder_name tree" to see folder structure from scrapy
-- input in terminal on project folder write "folder_name scrapy shell" to go to scrapy shell that allows to debug the spider in a more interactive way than just using print statements. 
-    Example: response.css('h2::text').get() will return the first h2 tag's of the response
-- to debug output of scrapy crawl input "scrapy crawl name_of_spider"
-- to get an output with file of scrapy crawl input "scrapy crawl name_of_spider -o filename.json"
