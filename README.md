@@ -1,15 +1,15 @@
 # ist_dash_2024_rec
-repo for group project in Data Science Engineering.
+Repo for group project in Data Science Engineering.
 
 Desired Characterics of Datasets:
 - Unbalanced dataset (more than 80% of data is class 0 (negative class))
 - High number of variables (more than 50 variables)
 - Simbolic vs numerical variables. 
 
-We intend to deliver a recommendation engine system for ecommerce and automotive companies.
-The project uses three datasets:
+This a classification task project. 
+Task description: https://e.tecnicomais.pt/pluginfile.php/340884/mod_resource/content/1/20240909.enunciadoProjDS.pdf 
 
-
+It will use 3 out of the following datasets:
 
 1. Online Behaviour data from multiple category store ✅
     - https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store 
