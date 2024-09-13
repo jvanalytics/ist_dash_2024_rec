@@ -18,6 +18,7 @@ It will use 3 out of the following datasets:
     - 285M events although partitioned by year/months periods
     - class target should be purchase or add to cart. Research dataset.
     - It can be considered unbalanced since generally only less than 5% buy something from a store
+    - Hugging Face Dataset: https://huggingface.co/datasets/jin-ying-so-cute/ecommerce-user-behavior-data 34M records
 
 
 2. Amazon|Aliexpress|Shein|Temu ratings (✅ but research dataset or scrape) 
@@ -49,7 +50,9 @@ It will use 3 out of the following datasets:
         - or multiple price tiers if possible. 
         - Dataset: AutoScout24, StandVirtual, Mercedes Benz Used Vans
 
-
+6. Criteo Advertising Click and/or Conversion Prediction
+    - https://huggingface.co/datasets/reczoo/Criteo_x1
+    - The Criteo dataset is a widely-used benchmark dataset for CTR prediction, which contains about one week of click-through data for display advertising. It has 13 numerical feature fields and 26 categorical feature fields. 
 
 Brainstorming Cases (can be used in the future)
     - Airbnb Deep Learning Case? Relation between image, reviews, host, price, location to find a good deal
