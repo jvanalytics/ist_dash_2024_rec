@@ -162,3 +162,5 @@ cython_debug/
 #.idea/
 *.csv
 *.jsonl
+notebooks/criteo_advertising/test.txt
+notebooks/criteo_advertising/train.txt
