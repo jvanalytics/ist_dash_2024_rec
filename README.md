@@ -31,6 +31,7 @@ It will use 3 out of the following datasets:
      - analyze if we can do with 3 classes: bad, neutral and good.
      - can detect fraudulent or good products.
    - predictive model to classify rating of product (without or low number of ratings) as positive or negative.
+     - TO VERIFY: if the product does not have ratings what is the chance that it is good or bad? should we use number of ratings as variable as well as reviews themselves?
    - can have a high number of variables depending on product category attributes
    - Dataset Example: https://www.kaggle.com/datasets/sayedmahmoud/amazanreviewscor5
    - Dataset https://nijianmo.github.io/amazon/index.html
