@@ -6,3 +6,7 @@ sales_csv_path = ('/Users/lourefra/Documents/Mercedes-benz.io/TRAINING/post grad
 df = pd.read_csv(sales_csv_path)
 
 print(df.head(5))
+
+oooteotoetoe
+
+
