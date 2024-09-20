@@ -16,19 +16,20 @@ It will use 3 out of the following datasets:
 1. Online Behaviour data from multiple category store ✅
 
    - https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store
-   - Collaborative + Content Based Recommender System for ecommerce dataset
    - based on ecommerce events (product page view, add to cart, purchase) + catalogue of the store.
    - 285M events although partitioned by year/months periods
-   - class label target should be purchase or add to cart. Research dataset.
+   - class label target should be purchase or add to cart.
    - Simbolic vs numeric variables
    - Hugging Face Dataset: https://huggingface.co/datasets/jin-ying-so-cute/ecommerce-user-behavior-data 34M records
 
-2. Google Analytics Sample Dataset Merchandise Store ✅
+2. Google Analytics 4 Sample Dataset Merchandise Store ✅
+  - multiple variables possible (product catalogue, user journey, location, device data)
+  - class label target should be purchase or add to cart or other major ecommerce event.
+  - Flatten ga4 table guide: https://medium.com/@vishwanathmuthuraman_92476/how-to-flatten-the-ga4-bigquery-export-schema-for-usage-in-relational-databases-a4a2cdc13fd6
   - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
   - dataset link: https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset
-  
   - interesting use case for multiple variables (device, time, page, channel, etc)
-  - interesting example on returning https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
+  - interesting example on returning visitors https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
 
 
 3. Criteo Advertising Click and/or Conversion Prediction ✅
@@ -51,16 +52,9 @@ It will use 3 out of the following datasets:
 - Used Car Use Cases
 
   - Used Car Binary Price Tier Prediction:
-    - Class Target: Predict house is above or below a price tier. Example: below or above 50k€
+    - Class Target: Predict car is above or below a price tier. Example: below or above 50k€
     - or multiple price tiers if possible.
     - Dataset: AutoScout24, StandVirtual, Mercedes Benz Used Vans
-
-- Google Analytics Sample Dataset Merchandise Store (investigate dataset export and values)
-  - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
-  - interesting use case for multiple variables (device, time, page, channel, etc)
-  - interesting example on returning https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
-
-
 
 - Amazon|Aliexpress|Shein|Temu ratings (✅ but research dataset or scrape)
 
