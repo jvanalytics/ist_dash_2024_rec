@@ -1,11 +1,16 @@
 DECLARE start_date DATE DEFAULT '2021-01-01';
-DECLARE end_date DATE DEFAULT '2021-12-31';
+DECLARE end_date DATE DEFAULT '2021-01-15';
 
 
 
 WITH prep as (
 SELECT
   user_pseudo_id
+, CASE 
+    WHEN device_category = 'desktop' THEN 1
+    WHEN device_category = 'mobile' THEN 2
+    WHEN device_category = 'tablet' THEN 3
+  END AS device_category
 , session_id
 , event_timestamp
 , event_name
@@ -28,8 +33,9 @@ WHERE event_date BETWEEN start_date and end_date
 
 
 SELECT
-  user_pseudo_id,
-  MAX(purchase_user) as purchase_user
+  user_pseudo_id
+, MAX(purchase_user) as purchase_user
+, MAX(device_category) as device
 , COUNT(DISTINCT session_id) as nr_sessions
 , COUNT(DISTINCT view_item) as items_viewed
 , COUNT(DISTINCT view_item_session) as view_item_sessions
@@ -37,7 +43,6 @@ SELECT
 , COUNT(DISTINCT add_to_cart) as add_to_cart_sessions
 , COUNT(DISTINCT begin_checkout) as begin_checkout_sessions
 , COUNT(DISTINCT add_payment_info) as add_payment_info_sessions
-, COUNT(DISTINCT purchase) as purchase_sessions
 
 FROM prep
 GROUP BY user_pseudo_id
