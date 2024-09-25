@@ -168,3 +168,5 @@ notebooks/criteo_advertising/train.txt
 *.parquet
 *.txt
 *.gz
+
+.DS_Store
