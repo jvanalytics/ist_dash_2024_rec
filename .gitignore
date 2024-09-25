@@ -167,3 +167,4 @@ notebooks/criteo_advertising/test.txt
 notebooks/criteo_advertising/train.txt
 *.parquet
 *.txt
+*.gz
