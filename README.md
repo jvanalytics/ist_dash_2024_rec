@@ -35,6 +35,7 @@ It will use 3 out of the following datasets:
 
 
 
+
 # Brainstorming Cases (can be used in the future)
 
 - Airbnb Deep Learning Case? Relation between image, reviews, host, price, location to find a good deal
@@ -75,3 +76,9 @@ It will use 3 out of the following datasets:
   - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
   - dataset link: https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset
   - interesting example on returning visitors https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
+
+
+- Online Behaviour Data from Cosmetics Store ✅
+  - https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop
+  - class label target: from each event timestamp did the user|session convert?
+  - hello world <3
