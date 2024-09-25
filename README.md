@@ -26,11 +26,10 @@ It will use 3 out of the following datasets:
   - predict event_name (eg.purchase or not) based on symbolic and numeric variables
   - Flatten ga4 table guide: https://medium.com/@vishwanathmuthuraman_92476/how-to-flatten-the-ga4-bigquery-export-schema-for-usage-in-relational-databases-a4a2cdc13fd6
 
-
 3. Online Behaviour Data from Cosmetics Store ✅
   - https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop
-   - class label target: from each event timestamp did the user|session convert?
-
+  - class label target: from each event timestamp did the user|session convert?
+  - hello world <3
 
 
 # Brainstorming Cases (can be used in the future)
