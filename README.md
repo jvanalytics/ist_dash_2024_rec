@@ -15,21 +15,25 @@ It will use 3 out of the following datasets:
 
 1. Online Behaviour data from multiple category store ✅
 
-   - https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store
-   - based on ecommerce events (product page view, add to cart, purchase) + catalogue of the store.
-   - class label target: from each event timestamp did the user|session convert?
-   - 285M events although partitioned by year/months periods
-   - Hugging Face Dataset: https://huggingface.co/datasets/jin-ying-so-cute/ecommerce-user-behavior-data 34M records
+  - https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store
+  - based on ecommerce events (product page view, add to cart, purchase) + catalogue of the store.
+  - class label target: from each event timestamp did the user|session convert?
+  - Hugging Face Dataset: https://huggingface.co/datasets/jin-ying-so-cute/ecommerce-user-behavior-data- - 66.5M records, 9 variables
 
 2. Google Analytics 4 Sample Dataset Merchandise Store ✅
   - multiple variables possible (product catalogue, user journey, location, device data)
-  - predict event_name (eg.purchase or not) based on symbolic and numeric variables
+  - predict returning visitor (1 or 0) from ga_session_number column 
   - Flatten ga4 table guide: https://medium.com/@vishwanathmuthuraman_92476/how-to-flatten-the-ga4-bigquery-export-schema-for-usage-in-relational-databases-a4a2cdc13fd6
+  - 7.76M records, 48 variables
 
-3. Online Behaviour Data from Cosmetics Store ✅
-  - https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop
-  - class label target: from each event timestamp did the user|session convert?
-  - hello world <3
+
+3. E-commerce multichannel direct messaging ✅
+  - https://www.kaggle.com/datasets/mkechinov/direct-messaging/
+  - https://www.kaggle.com/code/mkechinov/direct-messaging-campaigns-dataset-overview
+  - class label target eg: unsubscribe or click
+  - 10M Records, 32 variables
+
+
 
 
 # Brainstorming Cases (can be used in the future)
@@ -72,3 +76,9 @@ It will use 3 out of the following datasets:
   - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
   - dataset link: https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset
   - interesting example on returning visitors https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
+
+
+- Online Behaviour Data from Cosmetics Store ✅
+  - https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop
+  - class label target: from each event timestamp did the user|session convert?
+  - hello world <3
