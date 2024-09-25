@@ -1,14 +1,14 @@
 # CONDA ENVIRONMENT activation and libraries:
 
-2. clone your environment
+1. clone your environment
 
    - conda create --name ist --clone base
 
-1. to export your environment
+2. to export your environment
 
    - conda env export > ist_environment.yml
 
-1. to install other enironment:
+3. to install other enironment:
    - conda env create -f ist_environment.yml
 
 This will ensure that you can run the same libraries in your machine.
