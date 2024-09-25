@@ -17,26 +17,19 @@ It will use 3 out of the following datasets:
 
    - https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store
    - based on ecommerce events (product page view, add to cart, purchase) + catalogue of the store.
+   - class label target: from each event timestamp did the user|session convert?
    - 285M events although partitioned by year/months periods
-   - class label target should be purchase or add to cart.
-   - Simbolic vs numeric variables
    - Hugging Face Dataset: https://huggingface.co/datasets/jin-ying-so-cute/ecommerce-user-behavior-data 34M records
 
 2. Google Analytics 4 Sample Dataset Merchandise Store ✅
   - multiple variables possible (product catalogue, user journey, location, device data)
-  - class label target should be purchase or add to cart or other major ecommerce event.
+  - predict event_name (eg.purchase or not) based on symbolic and numeric variables
   - Flatten ga4 table guide: https://medium.com/@vishwanathmuthuraman_92476/how-to-flatten-the-ga4-bigquery-export-schema-for-usage-in-relational-databases-a4a2cdc13fd6
-  - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
-  - dataset link: https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset
-  - interesting use case for multiple variables (device, time, page, channel, etc)
-  - interesting example on returning visitors https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
 
-
-3. Criteo Advertising Click and/or Conversion Prediction ✅
-   - https://huggingface.co/datasets/reczoo/Criteo_x1
-   - The Criteo dataset is a widely-used benchmark dataset for CTR prediction, which contains about one week of click-through data for display advertising. It has 13 numerical feature fields and 26 categorical feature fields.
-   - hello world <3
-
+3. Online Behaviour Data from Cosmetics Store ✅
+  - https://www.kaggle.com/datasets/mkechinov/ecommerce-events-history-in-cosmetics-shop
+  - class label target: from each event timestamp did the user|session convert?
+  - hello world <3
 
 
 # Brainstorming Cases (can be used in the future)
@@ -59,14 +52,23 @@ It will use 3 out of the following datasets:
 
 - Amazon|Aliexpress|Shein|Temu ratings (✅ but research dataset or scrape)
 
-   - Dataset with ratings 1-5 stars, transform in binary for classification task.
-   - class label target should be GOOD or BAD product review.
-     - assume 4-5 stars is good and 1-2 stars is bad
-     - analyze if we can do with 3 classes: bad, neutral and good.
-     - can detect fraudulent or good products.
-   - predictive model to classify rating of product (without or low number of ratings) as positive or negative.
-     - TO VERIFY: if the product does not have ratings what is the chance that it is good or bad? should we use number of ratings as variable as well as reviews themselves?
-   - can have a high number of variables depending on product category attributes
-   - Dataset Example: https://www.kaggle.com/datasets/sayedmahmoud/amazanreviewscor5
-   - Dataset https://nijianmo.github.io/amazon/index.html
-   - Dataset https://amazon-reviews-2023.github.io/
+  - Dataset with ratings 1-5 stars, transform in binary for classification task.
+  - class label target should be GOOD or BAD product review.
+    - assume 4-5 stars is good and 1-2 stars is bad
+    - analyze if we can do with 3 classes: bad, neutral and good.
+    - can detect fraudulent or good products.
+  - predictive model to classify rating of product (without or low number of ratings) as positive or negative.
+    - TO VERIFY: if the product does not have ratings what is the chance that it is good or bad? should we use number of ratings as variable as well as reviews themselves?
+  - can have a high number of variables depending on product category attributes
+  - Dataset Example: https://www.kaggle.com/datasets/sayedmahmoud/amazanreviewscor5
+  - Dataset https://nijianmo.github.io/amazon/index.html
+  - Dataset https://amazon-reviews-2023.github.io/
+
+- Criteo Advertising Click and/or Conversion Prediction ✅
+  - https://huggingface.co/datasets/reczoo/Criteo_x1
+  - The Criteo dataset is a widely-used benchmark dataset for CTR prediction, which contains about one week of click-through data for display advertising. It has 13 numerical feature fields and 26 categorical feature fields.   
+
+- Google Merchandising Set
+  - https://www.kaggle.com/datasets/bigquery/google-analytics-sample
+  - dataset link: https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset
+  - interesting example on returning visitors https://www.kaggle.com/code/chewannsiong/tensorflow-predict-website-revisit
