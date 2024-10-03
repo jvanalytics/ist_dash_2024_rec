@@ -171,3 +171,5 @@ notebooks/criteo_advertising/train.txt
 
 .DS_Store
 notebooks/ecommerce_behaviour/dataset/.DS_Store
+notebooks/ecommerce_behaviour/.DS_Store
+notebooks/ecommerce_behaviour/dataset/.DS_Store
