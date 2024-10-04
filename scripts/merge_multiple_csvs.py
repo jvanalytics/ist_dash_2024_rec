@@ -2,7 +2,7 @@ import os
 import pandas as pd
 
 # Folder path where your CSV files are located
-folder_path = r'C:\Users\nosta\CODING\datasets\ga4_merch'
+folder_path = r'C:\Data\Coding\Python\DATASETS\google_merch_store_raw'
 
 # List to store dataframes
 csv_list = []
@@ -26,6 +26,12 @@ for filename in os.listdir(folder_path):
 merged_df = pd.concat(csv_list, ignore_index=True)
 
 # Save the combined DataFrame to a single CSV file
-merged_df.to_csv(r'C:\Users\nosta\CODING\datasets\ga4_merch\google_merch_store_raw_merge.csv', index=False)
+merged_df.to_csv(r'C:\Data\Coding\Python\DATASETS\google_merch_store_raw_merge.csv', index=False)
+
+# Save the combined DataFrame to a gzip-compressed CSV file
+merged_df.to_csv(r'C:\Data\Coding\Python\DATASETS\google_merch_store_raw_merge.csv.gz', 
+                 index=False, 
+                 compression='gzip')
+
 
 print("CSV files merged successfully!")
