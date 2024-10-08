@@ -187,6 +187,32 @@ def encode_column_with_mapping(df, column, mapping_dict, default_value=np.nan):
 
 
 
+def sheet_to_dict(excel_file, sheet_name):
+    """
+    Converts a sheet in an Excel file to a dictionary with the first column as the key and the second as the value.
+    
+    Args:
+    excel_file (str): Path to the Excel file.
+    sheet_name (str): Name of the sheet to convert.
+    
+    Returns:
+    dict: A dictionary with keys from the first column and values from the second column.
+    """
+    # Read the sheet into a DataFrame
+    df = pd.read_excel(excel_file, sheet_name=sheet_name)
+    
+    # Ensure that there are at least two columns
+    if df.shape[1] < 2:
+        raise ValueError(f"The sheet '{sheet_name}' does not have at least two columns.")
+    
+    # Create a dictionary from the first and second columns
+    mapping_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+    
+    return mapping_dict
+
+
+
+
 from numpy import ndarray
 from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots, savefig, show
