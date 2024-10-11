@@ -617,7 +617,9 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
 def run_NB(trnX, trnY, tstX, tstY, metric: str = "accuracy") -> dict[str, float]:
     estimators: dict[str, GaussianNB | MultinomialNB | BernoulliNB] = {
         "GaussianNB": GaussianNB(),
-        "MultinomialNB": MultinomialNB(),
+        #we are not goin to use this one, because we have negative values in cyclical variables. And this method can't work with negative values
+        
+        #"MultinomialNB": MultinomialNB(),
         "BernoulliNB": BernoulliNB(),
     }
     best_model: GaussianNB | MultinomialNB | BernoulliNB = None  # type: ignore
