@@ -292,15 +292,19 @@ def get_variable_types(df: DataFrame) -> dict[str, list]:
             variable_types["binary"].append(c)
             df[c].astype("bool")
         else:
-            try:
-                to_numeric(df[c], errors="raise")
-                variable_types["numeric"].append(c)
-            except ValueError:
+            # Check if the column is already of datetime type
+            if pandas.api.types.is_datetime64_any_dtype(df[c]):
+                variable_types["date"].append(c)
+            else:
                 try:
-                    df[c] = to_datetime(df[c], errors="raise")
-                    variable_types["date"].append(c)
+                    to_numeric(df[c], errors="raise")
+                    variable_types["numeric"].append(c)
                 except ValueError:
-                    variable_types["symbolic"].append(c)
+                    try:
+                        df[c] = to_datetime(df[c], errors="raise")
+                        variable_types["date"].append(c)
+                    except ValueError:
+                        variable_types["symbolic"].append(c)
 
     return variable_types
 
