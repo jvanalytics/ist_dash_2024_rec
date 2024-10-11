@@ -243,5 +243,183 @@ def analyse_property_granularity(
     return axs
 
 
+from numpy import array, ndarray
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from matplotlib.pyplot import figure, savefig, show
+from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, plot_bar_chart
+
+
+
+
+def naive_Bayes_study(
+    trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, metric: str = "accuracy"
+) -> tuple:
+    estimators: dict = {
+        "GaussianNB": GaussianNB(),
+        # "MultinomialNB": MultinomialNB(),
+        "BernoulliNB": BernoulliNB(),
+    }
+
+    xvalues: list = []
+    yvalues: list = []
+    best_model = None
+    best_params: dict = {"name": "", "metric": metric, "params": ()}
+    best_performance = 0
+    for clf in estimators:
+        xvalues.append(clf)
+        estimators[clf].fit(trnX, trnY)
+        prdY: array = estimators[clf].predict(tstX)
+        eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+        if eval - best_performance > DELTA_IMPROVE:
+            best_performance: float = eval
+            best_params["name"] = clf
+            best_params[metric] = eval
+            best_model = estimators[clf]
+        yvalues.append(eval)
+        # print(f'NB {clf}')
+    plot_bar_chart(
+        xvalues,
+        yvalues,
+        title=f"Naive Bayes Models ({metric})",
+        ylabel=metric,
+        percentage=True,
+    )
+
+    return best_model, best_params
+
+
+
+from itertools import product
+from numpy import ndarray, set_printoptions, arange
+from matplotlib.pyplot import gca, cm
+from matplotlib.axes import Axes
+
+def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
+    if ax is None:
+        ax = gca()
+    title = "Confusion matrix"
+    set_printoptions(precision=2)
+    tick_marks: ndarray = arange(0, len(classes_names), 1)
+    ax.set_title(title)
+    ax.set_ylabel("True label")
+    ax.set_xlabel("Predicted label")
+    ax.set_xticks(tick_marks)
+    ax.set_yticks(tick_marks)
+    ax.set_xticklabels(classes_names)
+    ax.set_yticklabels(classes_names)
+    ax.imshow(cnf_matrix, interpolation="nearest", cmap=cm.Blues)
+
+    for i, j in product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
+        ax.text(
+            j, i, format(cnf_matrix[i, j], "d"), color="y", horizontalalignment="center"
+        )
+    return ax
+
+
+
+def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
+    df: DataFrame
+    variables: dict = get_variable_types(data)
+    stg_num, v_num = "mean", -1
+    stg_sym, v_sym = "most_frequent", "NA"
+    stg_bool, v_bool = "most_frequent", False
+    if strategy != "knn":
+        lst_dfs: list = []
+        if strategy == "constant":
+            stg_num, stg_sym, stg_bool = "constant", "constant", "constant"
+        if len(variables["numeric"]) > 0:
+            imp = SimpleImputer(strategy=stg_num, fill_value=v_num, copy=True)
+            tmp_nr = DataFrame(
+                imp.fit_transform(data[variables["numeric"]]),
+                columns=variables["numeric"],
+            )
+            lst_dfs.append(tmp_nr)
+        if len(variables["symbolic"]) > 0:
+            imp = SimpleImputer(strategy=stg_sym, fill_value=v_sym, copy=True)
+            tmp_sb = DataFrame(
+                imp.fit_transform(data[variables["symbolic"]]),
+                columns=variables["symbolic"],
+            )
+            lst_dfs.append(tmp_sb)
+        if len(variables["binary"]) > 0:
+            imp = SimpleImputer(strategy=stg_bool, fill_value=v_bool, copy=True)
+            tmp_bool = DataFrame(
+                imp.fit_transform(data[variables["binary"]]),
+                columns=variables["binary"],
+            )
+            lst_dfs.append(tmp_bool)
+        df = concat(lst_dfs, axis=1)
+    else:
+        imp = KNNImputer(n_neighbors=5)
+        imp.fit(data)
+        ar: ndarray = imp.transform(data)
+        df = DataFrame(ar, columns=data.columns, index=data.index)
+    return df
+
+
+
+from typing import Literal
+from numpy import array, ndarray
+from sklearn.neighbors import KNeighborsClassifier
+from matplotlib.pyplot import figure, savefig, show
+from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, plot_multiline_chart
+from dslabs_functions import read_train_test_from_files, plot_evaluation_results
+
+def knn_study(
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, k_max: int=19, lag: int=2, metric='accuracy'
+        ) -> tuple[KNeighborsClassifier | None, dict]:
+    dist: list[Literal['manhattan', 'euclidean', 'chebyshev']] = ['manhattan', 'euclidean', 'chebyshev']
+
+    kvalues: list[int] = [i for i in range(1, k_max+1, lag)]
+    best_model: KNeighborsClassifier | None = None
+    best_params: dict = {'name': 'KNN', 'metric': metric, 'params': ()}
+    best_performance: float = 0.0
+
+    values: dict[str, list] = {}
+    for d in dist:
+        y_tst_values: list = []
+        for k in kvalues:
+            clf = KNeighborsClassifier(n_neighbors=k, metric=d)
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance: float = eval
+                best_params['params'] = (k, d)
+                best_model = clf
+            # print(f'KNN {d} k={k}')
+        values[d] = y_tst_values
+    print(f'KNN best with k={best_params['params'][0]} and {best_params['params'][1]}')
+    plot_multiline_chart(kvalues, values, title=f'KNN Models ({metric})', xlabel='k', ylabel=metric, percentage=True)
+
+    return best_model, best_params
+
+
+from numpy import ndarray
+from pandas import DataFrame, read_csv
+from matplotlib.pyplot import savefig, show, figure
+from dslabs_functions import plot_multibar_chart, CLASS_EVAL_METRICS, run_NB, run_KNN
+
+
+def evaluate_approach(
+    train: DataFrame, test: DataFrame, target: str = "returning_user", metric: str = "accuracy"
+) -> dict[str, list]:
+    trnY = train.pop(target).values
+    trnX: ndarray = train.values
+    tstY = test.pop(target).values
+    tstX: ndarray = test.values
+    eval: dict[str, list] = {}
+
+    eval_NB: dict[str, float] = run_NB(trnX, trnY, tstX, tstY, metric=metric)
+    eval_KNN: dict[str, float] = run_KNN(trnX, trnY, tstX, tstY, metric=metric)
+    if eval_NB != {} and eval_KNN != {}:
+        for met in CLASS_EVAL_METRICS:
+            eval[met] = [eval_NB[met], eval_KNN[met]]
+    return eval
+
+
+
+
 print("data_functions lodaded")
 
