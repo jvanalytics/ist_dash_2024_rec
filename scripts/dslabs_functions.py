@@ -617,7 +617,8 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
 def run_NB(trnX, trnY, tstX, tstY, metric: str = "accuracy") -> dict[str, float]:
     estimators: dict[str, GaussianNB | MultinomialNB | BernoulliNB] = {
         "GaussianNB": GaussianNB(),
-        "MultinomialNB": MultinomialNB(),
+        #Removing this option because MultinomialNB doen's work with negative values. And we have these values for time columns
+        #"MultinomialNB": MultinomialNB(),
         "BernoulliNB": BernoulliNB(),
     }
     best_model: GaussianNB | MultinomialNB | BernoulliNB = None  # type: ignore
