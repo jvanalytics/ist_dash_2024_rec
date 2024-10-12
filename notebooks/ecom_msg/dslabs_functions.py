@@ -7,6 +7,7 @@ from math import pi, sin, cos, ceil, sqrt
 from itertools import product
 from datetime import datetime
 from typing import Callable
+import numpy 
 from numpy import array, ndarray, arange, std, set_printoptions
 from matplotlib.collections import PathCollection
 from matplotlib.colorbar import Colorbar
@@ -20,7 +21,7 @@ from matplotlib.dates import AutoDateLocator, AutoDateFormatter
 # from matplotlib.dates import _reset_epoch_test_example, set_epoch
 from pandas import DataFrame, Series, Index, Period
 from pandas import read_csv, concat, to_numeric, to_datetime
-from pandas.api.types import is_integer_dtype, is_any_real_numeric_dtype
+from pandas.api.types import is_integer_dtype, is_any_real_numeric_dtype 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer, KNNImputer
 from sklearn.metrics import accuracy_score, recall_score, precision_score
@@ -282,6 +283,7 @@ def plot_multi_scatters_chart(
 #             DATA PROFILING
 # ---------------------------------------
 
+import pandas
 
 def get_variable_types(df: DataFrame) -> dict[str, list]:
     variable_types: dict = {"numeric": [], "binary": [], "date": [], "symbolic": []}
@@ -906,3 +908,4 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     return axs
 
+print("dslabs_functions loaded")
