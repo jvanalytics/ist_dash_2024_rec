@@ -396,6 +396,94 @@ def knn_study(
     return best_model, best_params
 
 
+import numpy as np
+import pandas as pd
+from typing import Tuple, List, Dict
+from sklearn.model_selection import train_test_split
+from matplotlib.pyplot import figure, show
+
+def define_target_and_prepare_data(df: pd.DataFrame, target: str) -> Tuple[np.ndarray, pd.Series, List[int], Dict[str, List[int]]]:
+    """
+    Defines the target variable and prepares the feature set and target labels.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame containing the data.
+    target (str): The name of the target variable.
+
+    Returns:
+    Tuple[np.ndarray, pd.Series, List[int], Dict[str, List[int]]]: A tuple containing:
+        - y (pd.Series): The target variable.
+        - X (np.ndarray): The feature set.
+        - labels (List[int]): Sorted list of unique labels.
+        - values (Dict[str, List[int]]): Counts of original classes.
+    
+    Raises:
+    KeyError: If the target variable is not found in the DataFrame.
+    """
+    # Check if the target exists in the DataFrame
+    if target not in df.columns:
+        raise KeyError(f"The target column '{target}' does not exist in the DataFrame. Available columns are: {df.columns.tolist()}")
+
+    # Extract labels and sort them
+    labels: list = list(df[target].unique())
+    labels.sort()
+    print(f"Labels={labels}")
+
+    # Create a dictionary to store original class counts
+    values: dict[str, list[int]] = {
+        "Original": [
+            len(df[df[target] == 0]),  # Assuming 0 is the negative class
+            len(df[df[target] == 1]),  # Assuming 1 is the positive class
+        ]
+    }
+
+    y: pd.Series = df.pop(target)  # Keep y as a Series
+    X: np.ndarray = df.values  # Extract the features as ndarray
+
+    return y, X, labels, values
+
+
+def split_data_save_csv(X: pd.DataFrame, y: pd.Series, data_columns: List[str], target_column: str, file_tag=None, train_size=0.7, save=False, save_path="data/"):
+    """
+    Splits data into training and test sets, then returns the corresponding DataFrames.
+    Optionally saves the DataFrames as CSV files.
+    
+    Parameters:
+    X (pd.DataFrame): The feature set.
+    y (pd.Series): The target labels.
+    data_columns (list): The column names of X.
+    target_column (str): The name of the target column.
+    file_tag (str, optional): Tag to use in the filename if saving CSVs.
+    train_size (float, optional): Proportion of data to use for training (default is 0.7).
+    save (bool, optional): Whether to save the train/test DataFrames as CSV files (default is False).
+    save_path (str, optional): Path to save the CSV files (default is "data/").    
+    Returns:
+    train (pd.DataFrame): The training DataFrame (features + target).
+    test (pd.DataFrame): The testing DataFrame (features + target).
+    """
+    # Calculate the split index based on train_size
+    split_index = int(len(X) * train_size)
+
+    # Split the DataFrame into train and test sets
+    train_X = X.iloc[:split_index]
+    test_X = X.iloc[split_index:]
+
+    # Separate the target variable
+    train_y = y.iloc[:split_index]
+    test_y = y.iloc[split_index:]
+
+    # Create train and test DataFrames including the target
+    train = pd.concat([train_X.reset_index(drop=True), train_y.reset_index(drop=True)], axis=1)
+    test = pd.concat([test_X.reset_index(drop=True), test_y.reset_index(drop=True)], axis=1)
+
+    # Optionally save to CSV
+    if save and file_tag:
+        train.to_csv(f"{save_path}{file_tag}_train.csv", index=False)
+        test.to_csv(f"{save_path}{file_tag}_test.csv", index=False)
+
+    return train, test
+
+
 from numpy import ndarray
 from pandas import DataFrame, read_csv
 from matplotlib.pyplot import savefig, show, figure
