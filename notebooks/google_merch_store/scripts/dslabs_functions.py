@@ -208,7 +208,8 @@ def plot_multiline_chart(
     for name, y in yvalues.items():
         ax.plot(xvalues, y)
         legend.append(name)
-        if any(v < 0 for v in y) and percentage:
+        # if any(v < 0 for v in y) and percentage: # had a bug on feat eng step
+        if any(v is not None and v < 0 for v in y) and percentage:
             ax.set_ylim(-1.0, 1.0)
     ax.legend(legend, fontsize="xx-small")
     return ax
@@ -480,12 +481,44 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
     return df
 
 
-def select_low_variance_variables(data: DataFrame, max_threshold: float, target: str = "class") -> list:
+def select_low_variance_variables(
+    data: DataFrame, 
+    max_threshold: float, 
+    target: str = "returning_user",
+    min_features_to_keep: int = 10  # Minimum number of features to retain
+) -> list:
     summary5: DataFrame = data.describe()
-    vars2drop: Index[str] = summary5.columns[summary5.loc["std"] * summary5.loc["std"] < max_threshold]
-    vars2drop = vars2drop.drop(target) if target in vars2drop else vars2drop
+
+    # Calculate variance (standard deviation squared)
+    variances = summary5.loc["std"] ** 2
+
+    # Drop features with variance below the max_threshold
+    vars2drop: Index[str] = summary5.columns[variances < max_threshold]
+
+    # Ensure that the target column is not dropped
+    if target in vars2drop:
+        vars2drop = vars2drop.drop(target)
+
+    # Safeguard: Ensure a minimum number of features are retained
+    remaining_features = data.drop(vars2drop, axis=1).shape[1]
+    if remaining_features < min_features_to_keep:
+        print(f"Threshold too strict, keeping at least {min_features_to_keep} features.")
+        vars2drop = summary5.columns[variances < max_threshold]
+        remaining_features = data.drop(vars2drop, axis=1).shape[1]
+
+        # If still too few features, skip dropping
+        if remaining_features < min_features_to_keep:
+            print(f"Warning: Dropping too many features even with adjusted threshold.")
+            vars2drop = Index([])  # Don't drop any variables
+
+    print(f"Variance threshold: {max_threshold}, Remaining features: {remaining_features}")
+    print(f"Variables to drop: {list(vars2drop)}")
+
     return list(vars2drop.values)
 
+
+from math import ceil
+from matplotlib.pyplot import savefig, show, figure
 
 def study_variance_for_feature_selection(
     train: DataFrame,
@@ -495,26 +528,76 @@ def study_variance_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
+    min_features_to_keep: int = 5  # Minimum features safeguard
 ) -> dict:
-    options: list[float] = [round(i * lag, 3) for i in range(1, ceil(max_threshold / lag + lag))]
+    # Generate the range of variance thresholds to test
+    options: list[float] = [
+        round(i * lag, 3) for i in range(1, ceil(max_threshold / lag + lag))
+    ]
+    
     results: dict[str, list] = {"NB": [], "KNN": []}
     summary5: DataFrame = train.describe()
+    
     for thresh in options:
-        vars2drop: Index[str] = summary5.columns[summary5.loc["std"] * summary5.loc["std"] < thresh]
-        vars2drop = vars2drop.drop(target) if target in vars2drop else vars2drop
+        print(f"Testing threshold: {thresh}")
+        
+        # Calculate variance and select variables to drop
+        variances = summary5.loc["std"] ** 2
+        vars2drop: Index[str] = summary5.columns[variances < thresh]
 
+        # Ensure we don't drop the target column
+        if target in vars2drop:
+            vars2drop = vars2drop.drop(target)
+
+        # Safeguard: Ensure we don't drop too many features
+        remaining_features = train.drop(vars2drop, axis=1).shape[1]
+        if remaining_features < min_features_to_keep:
+            print(f"Threshold too strict at {thresh}, adjusting to retain at least {min_features_to_keep} features.")
+            # Adjust threshold dynamically
+            vars2drop = summary5.columns[variances < thresh / 2]
+            remaining_features = train.drop(vars2drop, axis=1).shape[1]
+            if remaining_features < min_features_to_keep:
+                print(f"Still too strict, keeping all variables for this threshold.")
+                vars2drop = Index([])  # Don't drop any variables
+
+        print(f"Dropping variables: {list(vars2drop)}")
+        print(f"Remaining features after drop: {remaining_features}")
+
+        # Drop the low variance variables from train and test sets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-        eval: dict[str, list] | None = evaluate_approach(train_copy, test_copy, target=target, metric=metric)
-        if eval is not None:
-            results["NB"].append(eval[metric][0])
-            results["KNN"].append(eval[metric][1])
 
+
+        # Evaluate the approach using the current feature set
+        eval: dict[str, list] | None = evaluate_approach(
+            train_copy, test_copy, target=target, metric=metric
+        )
+
+        # Check if evaluation returned results
+        if eval:
+            print(f"Evaluation results at threshold {thresh}: {eval}")
+            if metric in eval:
+                print(f"Evaluation for {metric}: {eval[metric]}")
+                results["NB"].append(eval[metric][0])
+                results["KNN"].append(eval[metric][1])
+            else:
+                print(f"Metric '{metric}' not found in evaluation results at threshold {thresh}.")
+                results["NB"].append(None)
+                results["KNN"].append(None)
+        else:
+            print(f"Evaluation failed or returned empty at threshold {thresh}.")
+            results["NB"].append(None)
+            results["KNN"].append(None)
+            
+
+
+
+    # Plotting the results of the variance study
     plot_multiline_chart(
         options,
         results,
         title=f"{file_tag} variance study ({metric})",
-        xlabel="variance threshold",
+        xlabel="Variance threshold",
         ylabel=metric,
         percentage=True,
     )
@@ -522,7 +605,11 @@ def study_variance_for_feature_selection(
     return results
 
 
-def select_redundant_variables(data: DataFrame, min_threshold: float = 0.90, target: str = "class") -> list:
+
+
+def select_redundant_variables(
+    data: DataFrame, min_threshold: float = 0.90, target: str = "class"
+) -> list:
     df: DataFrame = data.drop(target, axis=1, inplace=False)
     corr_matrix: DataFrame = abs(df.corr())
     variables: Index[str] = corr_matrix.columns
@@ -547,30 +634,68 @@ def study_redundancy_for_feature_selection(
     metric: str = "accuracy",
     file_tag: str = "",
 ) -> dict:
-    options: list[float] = [round(min_threshold + i * lag, 3) for i in range(ceil((1 - min_threshold) / lag) + 1)]
+    # Generate the range of redundancy thresholds to test
+    options: list[float] = [
+        round(min_threshold + i * lag, 3)
+        for i in range(ceil((1 - min_threshold) / lag) + 1)
+    ]
 
+    # Ensure 'target' column is present and drop it for correlation calculation
     df: DataFrame = train.drop(target, axis=1, inplace=False)
+    print(f"Columns in the train dataset: {df.columns.tolist()}")  # Debugging step
+
+    # Calculate the correlation matrix
     corr_matrix: DataFrame = abs(df.corr())
     variables: Index[str] = corr_matrix.columns
+    print(f"Variables considered for correlation: {variables.tolist()}")  # Debugging step
+
     results: dict[str, list] = {"NB": [], "KNN": []}
+    
     for thresh in options:
         vars2drop: list = []
+        
+        # Loop through the variables to identify correlated features
         for v1 in variables:
+            # Get features correlated with the current variable
             vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= thresh]
-            vars_corr.drop(v1, inplace=True)
+            
+            # Check if the current variable is in the correlation list before trying to drop it
+            if v1 in vars_corr:
+                vars_corr.drop(v1, inplace=True)
+            
+            # If other variables are highly correlated with v1, consider them for removal
             if len(vars_corr) > 1:
                 lst_corr = list(vars_corr.index)
                 for v2 in lst_corr:
                     if v2 not in vars2drop:
                         vars2drop.append(v2)
 
+        print(f"Variables to drop at threshold {thresh}: {vars2drop}")  # Debugging step
+        
+        # Drop the selected redundant variables from train and test datasets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-        eval: dict | None = evaluate_approach(train_copy, test_copy, target=target, metric=metric)
-        if eval is not None:
-            results["NB"].append(eval[metric][0])
-            results["KNN"].append(eval[metric][1])
 
+        # Evaluate the approach using the current feature set
+        eval: dict | None = evaluate_approach(train_copy, test_copy, target=target, metric=metric)
+
+        # Check if evaluation returned results
+        if eval:
+            print(f"Evaluation results at threshold {thresh}: {eval}")
+            if metric in eval:
+                print(f"Evaluation for {metric}: {eval[metric]}")
+                results["NB"].append(eval[metric][0])
+                results["KNN"].append(eval[metric][1])
+            else:
+                print(f"Metric '{metric}' not found in evaluation results at threshold {thresh}.")
+                results["NB"].append(None)
+                results["KNN"].append(None)
+        else:
+            print(f"Evaluation failed or returned empty at threshold {thresh}.")
+            results["NB"].append(None)
+            results["KNN"].append(None)
+
+    # Optional: Save or plot the results after evaluation
     plot_multiline_chart(
         options,
         results,
@@ -587,13 +712,13 @@ def apply_feature_selection(
     train: DataFrame,
     test: DataFrame,
     vars2drop: list,
-    filename: str = "",
-    tag: str = "",
+    # filename: str = "",
+    # tag: str = "",
 ) -> tuple[DataFrame, DataFrame]:
     train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
-    train_copy.to_csv(f"{filename}_train_{tag}.csv", index=True)
+    # train_copy.to_csv(f"{filename}_train_{tag}.csv", index=True)
     test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-    test_copy.to_csv(f"{filename}_test_{tag}.csv", index=True)
+    # test_copy.to_csv(f"{filename}_test_{tag}.csv", index=True)
     return train_copy, test_copy
 
 
