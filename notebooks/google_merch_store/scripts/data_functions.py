@@ -420,6 +420,7 @@ def define_target_and_prepare_data(df: pd.DataFrame, target: str) -> Tuple[np.nd
     Raises:
     KeyError: If the target variable is not found in the DataFrame.
     """
+    
     # Check if the target exists in the DataFrame
     if target not in df.columns:
         raise KeyError(f"The target column '{target}' does not exist in the DataFrame. Available columns are: {df.columns.tolist()}")
