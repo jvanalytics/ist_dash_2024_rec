@@ -508,6 +508,4 @@ def evaluate_approach(
     return eval
 
 
-
-
-print("data_functions lodaded")
+print("data_functions loaded")
