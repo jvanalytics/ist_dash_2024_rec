@@ -485,6 +485,52 @@ def split_data_save_csv(X: pd.DataFrame, y: pd.Series, data_columns: List[str], 
     return train, test
 
 
+    
+from typing import Tuple, Optional
+
+def simple_split_df(df: pd.DataFrame, sort_by: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits a DataFrame into train and test sets based on a 70/30 split ratio.
+    Optionally, sorts the DataFrame by a specified column before splitting.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        The DataFrame to be split.
+
+    sort_by : Optional[str], default=None
+        The column name by which to sort the DataFrame before splitting.
+        If None, no sorting will be applied.
+
+    Returns:
+    --------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        A tuple containing the training set (70%) and test set (30%).
+
+    Example:
+    --------
+    train, test = simple_split_df(data_save, sort_by="date")
+    """
+
+    # Create a copy of the DataFrame to avoid modifying the original
+    df_copy = df.copy()
+
+    # Sort the DataFrame by the specified column if provided
+    if sort_by:
+        df_copy.sort_values(by=sort_by, inplace=True)
+
+    # Determine the split index (70% train, 30% test)
+    split_index = int(len(df_copy) * 0.7)
+
+    # Split the DataFrame into train and test sets
+    train = df_copy.iloc[:split_index]
+    test = df_copy.iloc[split_index:]
+
+    return train, test
+
+
+
+
 from numpy import ndarray
 from pandas import DataFrame, read_csv
 from matplotlib.pyplot import savefig, show, figure
