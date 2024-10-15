@@ -934,4 +934,4 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     return axs
 
-print("data_functions lodaded")
+print("dslabs_functions lodaded")
