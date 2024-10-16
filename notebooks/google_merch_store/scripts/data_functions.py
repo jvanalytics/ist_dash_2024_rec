@@ -554,7 +554,326 @@ def evaluate_approach(
     return eval
 
 
+from typing import Literal
+from numpy import array, ndarray
+from matplotlib.pyplot import figure, savefig, show
+from sklearn.tree import DecisionTreeClassifier
+from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, read_train_test_from_files
+from dslabs_functions import plot_evaluation_results, plot_multiline_chart
 
+
+def trees_study(
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, d_max: int=10, lag:int=2, metric='accuracy'
+        ) -> tuple:
+    criteria: list[Literal['entropy', 'gini']] = ['entropy', 'gini']
+    depths: list[int] = [i for i in range(2, d_max+1, lag)]
+
+    best_model: DecisionTreeClassifier | None = None
+    best_params: dict = {'name': 'DT', 'metric': metric, 'params': ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    for c in criteria:
+        y_tst_values: list[float] = []
+        for d in depths:
+            clf = DecisionTreeClassifier(max_depth=d, criterion=c, min_impurity_decrease=0)
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance = eval
+                best_params['params'] = (c, d)
+                best_model = clf
+            # print(f'DT {c} and d={d}')
+        values[c] = y_tst_values
+    print(f'DT best with {best_params['params'][0]} and d={best_params['params'][1]}')
+    plot_multiline_chart(depths, values, title=f'DT Models ({metric})', xlabel='d', ylabel=metric, percentage=True)
+
+    return best_model, best_params
+
+from numpy import array, ndarray
+from matplotlib.pyplot import figure, savefig, show
+from sklearn.linear_model import LogisticRegression
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import plot_evaluation_results, plot_multiline_chart
+
+
+
+def logistic_regression_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_iterations: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[LogisticRegression | None, dict]:
+    nr_iterations: list[int] = [lag] + [
+        i for i in range(2 * lag, nr_max_iterations + 1, lag)
+    ]
+
+    penalty_types: list[str] = ["l1", "l2"]  # only available if optimizer='liblinear'
+
+    best_model = None
+    best_params: dict = {"name": "LR", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    for type in penalty_types:
+        warm_start = False
+        y_tst_values: list[float] = []
+        for j in range(len(nr_iterations)):
+            clf = LogisticRegression(
+                penalty=type,
+                max_iter=lag,
+                warm_start=warm_start,
+                solver="liblinear",
+                verbose=False,
+            )
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            warm_start = True
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance = eval
+                best_params["params"] = (type, nr_iterations[j])
+                best_model: LogisticRegression = clf
+            # print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
+        values[type] = y_tst_values
+    plot_multiline_chart(
+        nr_iterations,
+        values,
+        title=f"LR models ({metric})",
+        xlabel="nr iterations",
+        ylabel=metric,
+        percentage=True,
+    )
+    print(
+        f'LR best for {best_params["params"][1]} iterations (penalty={best_params["params"][0]})'
+    )
+
+    return best_model, best_params
+
+
+from typing import Literal
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.neural_network import MLPClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def mlp_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_iterations: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[MLPClassifier | None, dict]:
+    nr_iterations: list[int] = [lag] + [
+        i for i in range(2 * lag, nr_max_iterations + 1, lag)
+    ]
+
+    lr_types: list[Literal["constant", "invscaling", "adaptive"]] = [
+        "constant",
+        "invscaling",
+        "adaptive",
+    ]  # only used if optimizer='sgd'
+    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
+
+    best_model: MLPClassifier | None = None
+    best_params: dict = {"name": "MLP", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    _, axs = subplots(
+        1, len(lr_types), figsize=(len(lr_types) * HEIGHT, HEIGHT), squeeze=False
+    )
+    for i in range(len(lr_types)):
+        type: str = lr_types[i]
+        values = {}
+        for lr in learning_rates:
+            warm_start: bool = False
+            y_tst_values: list[float] = []
+            for j in range(len(nr_iterations)):
+                clf = MLPClassifier(
+                    learning_rate=type,
+                    learning_rate_init=lr,
+                    max_iter=lag,
+                    warm_start=warm_start,
+                    activation="logistic",
+                    solver="sgd",
+                    verbose=False,
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                warm_start = True
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (type, lr, nr_iterations[j])
+                    best_model = clf
+                # print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
+            values[lr] = y_tst_values
+        plot_multiline_chart(
+            nr_iterations,
+            values,
+            ax=axs[0, i],
+            title=f"MLP with {type}",
+            xlabel="nr iterations",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'MLP best for {best_params["params"][2]} iterations (lr_type={best_params["params"][0]} and lr={best_params["params"][1]}'
+    )
+
+    return best_model, best_params
+
+
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.ensemble import RandomForestClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def random_forests_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_trees: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[RandomForestClassifier | None, dict]:
+    n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
+    max_depths: list[int] = [2, 5, 7]
+    max_features: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    best_model: RandomForestClassifier | None = None
+    best_params: dict = {"name": "RF", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+
+    cols: int = len(max_depths)
+    _, axs = subplots(1, cols, figsize=(cols * HEIGHT, HEIGHT), squeeze=False)
+    for i in range(len(max_depths)):
+        d: int = max_depths[i]
+        values = {}
+        for f in max_features:
+            y_tst_values: list[float] = []
+            for n in n_estimators:
+                clf = RandomForestClassifier(
+                    n_estimators=n, max_depth=d, max_features=f
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (d, f, n)
+                    best_model = clf
+                # print(f'RF d={d} f={f} n={n}')
+            values[f] = y_tst_values
+        plot_multiline_chart(
+            n_estimators,
+            values,
+            ax=axs[0, i],
+            title=f"Random Forests with max_depth={d}",
+            xlabel="nr estimators",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'RF best for {best_params["params"][2]} trees (d={best_params["params"][0]} and f={best_params["params"][1]})'
+    )
+    return best_model, best_params
+
+
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.ensemble import GradientBoostingClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def gradient_boosting_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_trees: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[GradientBoostingClassifier | None, dict]:
+    n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
+    max_depths: list[int] = [2, 5, 7]
+    learning_rates: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    best_model: GradientBoostingClassifier | None = None
+    best_params: dict = {"name": "GB", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    cols: int = len(max_depths)
+    _, axs = subplots(1, cols, figsize=(cols * HEIGHT, HEIGHT), squeeze=False)
+    for i in range(len(max_depths)):
+        d: int = max_depths[i]
+        values = {}
+        for lr in learning_rates:
+            y_tst_values: list[float] = []
+            for n in n_estimators:
+                clf = GradientBoostingClassifier(
+                    n_estimators=n, max_depth=d, learning_rate=lr
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (d, lr, n)
+                    best_model = clf
+                # print(f'GB d={d} lr={lr} n={n}')
+            values[lr] = y_tst_values
+        plot_multiline_chart(
+            n_estimators,
+            values,
+            ax=axs[0, i],
+            title=f"Gradient Boosting with max_depth={d}",
+            xlabel="nr estimators",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'GB best for {best_params["params"][2]} trees (d={best_params["params"][0]} and lr={best_params["params"][1]}'
+    )
+
+    return best_model, best_params
 
 print("data_functions lodaded")
 

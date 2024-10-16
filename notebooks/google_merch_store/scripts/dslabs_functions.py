@@ -799,20 +799,80 @@ def evaluate_approach(
             eval[met] = [eval_NB[met], eval_KNN[met]]
     return eval
 
+# original function
+# def read_train_test_from_files(
+#     train_fn: str, test_fn: str, target: str = "class"
+# ) -> tuple[ndarray, ndarray, array, array, list, list]:
+#     train: DataFrame = read_csv(train_fn, index_col=None)
+#     labels: list = list(train[target].unique())
+#     labels.sort()
+#     trnY: array = train.pop(target).to_list()
+#     trnX: ndarray = train.values
 
+#     test: DataFrame = read_csv(test_fn, index_col=None)
+#     tstY: array = test.pop(target).to_list()
+#     tstX: ndarray = test.values
+#     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+
+from typing import Union
+import pandas as pd
+from pandas import DataFrame
+from numpy import array, ndarray
+
+# adapted to read from memory
 def read_train_test_from_files(
-    train_fn: str, test_fn: str, target: str = "class"
+    train_fn: Union[str, DataFrame], test_fn: Union[str, DataFrame], target: str = "class"
 ) -> tuple[ndarray, ndarray, array, array, list, list]:
-    train: DataFrame = read_csv(train_fn, index_col=None)
+    """
+    Reads training and test data from either CSV files or DataFrames, and splits
+    the data into features and target.
+
+    Parameters:
+    -----------
+    train_fn : Union[str, DataFrame]
+        File path to the training CSV or a DataFrame object.
+    test_fn : Union[str, DataFrame]
+        File path to the test CSV or a DataFrame object.
+    target : str, default="class"
+        The name of the target column.
+
+    Returns:
+    --------
+    tuple : (trnX, tstX, trnY, tstY, labels, features)
+        - trnX: Training feature set as ndarray.
+        - tstX: Test feature set as ndarray.
+        - trnY: Training labels as array.
+        - tstY: Test labels as array.
+        - labels: List of unique target values.
+        - features: List of feature names (column names).
+    """
+    # Check if train_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(train_fn, str):
+        train: DataFrame = pd.read_csv(train_fn, index_col=None)
+    else:
+        train: DataFrame = train_fn.copy()  # Use the provided DataFrame directly
+
+    # Extract and sort unique target labels
     labels: list = list(train[target].unique())
     labels.sort()
+
+    # Separate features (X) and target (Y) for training data
     trnY: array = train.pop(target).to_list()
     trnX: ndarray = train.values
 
-    test: DataFrame = read_csv(test_fn, index_col=None)
+    # Check if test_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(test_fn, str):
+        test: DataFrame = pd.read_csv(test_fn, index_col=None)
+    else:
+        test: DataFrame = test_fn.copy()  # Use the provided DataFrame directly
+
+    # Separate features (X) and target (Y) for test data
     tstY: array = test.pop(target).to_list()
     tstX: ndarray = test.values
+
     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+
+
 
 
 def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
