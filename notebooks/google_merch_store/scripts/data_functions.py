@@ -396,6 +396,11 @@ def knn_study(
     return best_model, best_params
 
 
+# Define a function to sample 10% from each group
+def sample_per_day(group, fraction=0.1):
+    return group.sample(frac=fraction)
+
+
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Dict
