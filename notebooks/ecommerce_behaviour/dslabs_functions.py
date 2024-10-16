@@ -283,26 +283,56 @@ def plot_multi_scatters_chart(
 # ---------------------------------------
 
 
+#def get_variable_types(df: DataFrame) -> dict[str, list]:
+#   variable_types: dict = {"numeric": [], "binary": [], "date": [], "symbolic": []}
+#
+#   nr_values: Series = df.nunique(axis=0, dropna=True)
+#   for c in df.columns:
+#       if 2 == nr_values[c]:
+#           variable_types["binary"].append(c)
+#           df[c].astype("bool")
+#       else:
+#           try:
+#               to_numeric(df[c], errors="raise")
+#               variable_types["numeric"].append(c)
+#           except ValueError:
+#               try:
+#                   df[c] = to_datetime(df[c], errors="raise")
+#                   variable_types["date"].append(c)
+#               except ValueError:
+#                   variable_types["symbolic"].append(c)
+#
+#   return variable_types
+
+
+
+#new version fixed
+from pandas import Series, DataFrame, to_numeric, to_datetime
+
 def get_variable_types(df: DataFrame) -> dict[str, list]:
     variable_types: dict = {"numeric": [], "binary": [], "date": [], "symbolic": []}
 
     nr_values: Series = df.nunique(axis=0, dropna=True)
+    
     for c in df.columns:
-        if 2 == nr_values[c]:
+        if 2 == nr_values[c]:  # Colunas com exatamente 2 valores únicos
             variable_types["binary"].append(c)
-            df[c].astype("bool")
         else:
-            try:
-                to_numeric(df[c], errors="raise")
-                variable_types["numeric"].append(c)
-            except ValueError:
+            if df[c].dtype == 'datetime64[ns, UTC]':  # Verifica se a coluna já é datetime
+                variable_types["date"].append(c)
+            else:
                 try:
-                    df[c] = to_datetime(df[c], errors="raise")
-                    variable_types["date"].append(c)
+                    df[c] = to_numeric(df[c], errors="raise")
+                    variable_types["numeric"].append(c)
                 except ValueError:
-                    variable_types["symbolic"].append(c)
+                    try:
+                        df[c] = to_datetime(df[c], errors="raise")
+                        variable_types["date"].append(c)
+                    except ValueError:
+                        variable_types["symbolic"].append(c)
 
     return variable_types
+
 
 
 def determine_outlier_thresholds_for_var(
@@ -615,12 +645,14 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
 
 
 def run_NB(trnX, trnY, tstX, tstY, metric: str = "accuracy") -> dict[str, float]:
-    estimators: dict[str, GaussianNB | MultinomialNB | BernoulliNB] = {
+    estimators: dict[str, GaussianNB | BernoulliNB] = {
         "GaussianNB": GaussianNB(),
-        "MultinomialNB": MultinomialNB(),
+        #we are not goin to use this one, because we have negative values in cyclical variables. And this method can't work with negative values
+        
+        #"MultinomialNB": MultinomialNB(),
         "BernoulliNB": BernoulliNB(),
     }
-    best_model: GaussianNB | MultinomialNB | BernoulliNB = None  # type: ignore
+    best_model: GaussianNB | BernoulliNB = None  # type: ignore
     best_performance: float = 0.0
     eval: dict[str, float] = {}
 
@@ -902,3 +934,4 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     return axs
 
+print("dslabs_functions lodaded")
