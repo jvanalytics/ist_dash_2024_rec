@@ -880,5 +880,112 @@ def gradient_boosting_study(
 
     return best_model, best_params
 
+from numpy import ndarray
+from pandas import concat
+from sklearn.impute import SimpleImputer, KNNImputer
+from dslabs_functions import get_variable_types, mvi_by_filling
+
+
+def apply_missing_values_frequent(df):
+
+    df_copy=df.copy()
+    df_copy = mvi_by_filling(df_copy, strategy="frequent")
+
+    return df_copy
+
+
+def apply_missing_values_remove_cols_and_any_na_rows(df,cols):
+
+    df_copy=df.copy()
+
+    # pass cols list to drop
+    df_copy = df_copy.drop(cols, axis=1)
+
+    # drop remaining records where there are nulls
+    df_copy = df_copy.dropna(axis=0, how="any")
+
+    return df_copy
+
+
+from dslabs_functions import (
+    NR_STDEV,
+    get_variable_types,
+    determine_outlier_thresholds_for_var,
+)
+
+def truncate_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    df_copy[outlier_var] = df_copy[outlier_var].apply(
+        lambda x: top if x > top else bottom if x < bottom else x
+    )
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+
+    return df_copy
+
+
+from pandas import DataFrame, Series
+
+def drop_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    outliers: Series = df_copy[(df_copy[outlier_var] > top) | (df_copy[outlier_var] < bottom)]
+
+    df_copy.drop(outliers.index, axis=0, inplace=True)
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+    return df_copy
+
+
+from sklearn.preprocessing import StandardScaler
+
+def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply scaling to only the feature columns
+    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_zscore[target] = target_data
+
+    return df_zscore
+
+
+from sklearn.preprocessing import MinMaxScaler
+def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply MinMax scaling to the feature columns only
+    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_minmax[target] = target_data  # Add the unscaled target column back
+
+    return df_minmax
+
+
 print("data_functions lodaded")
 
