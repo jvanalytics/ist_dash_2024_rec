@@ -729,6 +729,7 @@ def apply_feature_selection(
 
 DELTA_IMPROVE: float = 0.001
 
+from sklearn.metrics import fbeta_score
 
 CLASS_EVAL_METRICS: dict[str, Callable] = {
     "accuracy": accuracy_score,
@@ -736,6 +737,7 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
     "precision": precision_score,
     "auc": roc_auc_score,
     "f1": f1_score,
+    "f2": lambda y_true, y_pred: fbeta_score(y_true, y_pred, beta=2),  # Adding F2 score   
 }
 
 
