@@ -485,9 +485,13 @@ def select_low_variance_variables(
     data: DataFrame, 
     max_threshold: float, 
     target: str = "returning_user",
-    min_features_to_keep: int = 10  # Minimum number of features to retain
+    min_features_to_keep: int = 10,  # Minimum number of features to retain
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude
 ) -> list:
-    summary5: DataFrame = data.describe()
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = data.drop(columns=exclude, errors='ignore')
+    
+    summary5: DataFrame = data_filtered.describe()
 
     # Calculate variance (standard deviation squared)
     variances = summary5.loc["std"] ** 2
@@ -500,11 +504,11 @@ def select_low_variance_variables(
         vars2drop = vars2drop.drop(target)
 
     # Safeguard: Ensure a minimum number of features are retained
-    remaining_features = data.drop(vars2drop, axis=1).shape[1]
+    remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
     if remaining_features < min_features_to_keep:
         print(f"Threshold too strict, keeping at least {min_features_to_keep} features.")
         vars2drop = summary5.columns[variances < max_threshold]
-        remaining_features = data.drop(vars2drop, axis=1).shape[1]
+        remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
 
         # If still too few features, skip dropping
         if remaining_features < min_features_to_keep:
@@ -514,6 +518,7 @@ def select_low_variance_variables(
     print(f"Variance threshold: {max_threshold}, Remaining features: {remaining_features}")
     print(f"Variables to drop: {list(vars2drop)}")
 
+    # Return the columns to drop, while preserving the excluded ones
     return list(vars2drop.values)
 
 
@@ -608,20 +613,29 @@ def study_variance_for_feature_selection(
 
 
 def select_redundant_variables(
-    data: DataFrame, min_threshold: float = 0.90, target: str = "class"
+    data: DataFrame, 
+    min_threshold: float = 0.90, 
+    target: str = "class", 
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from redundancy check
 ) -> list:
-    df: DataFrame = data.drop(target, axis=1, inplace=False)
-    corr_matrix: DataFrame = abs(df.corr())
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = data.drop(columns=[target] + exclude, errors='ignore')
+
+    # Calculate the correlation matrix
+    corr_matrix: DataFrame = abs(data_filtered.corr())
     variables: Index[str] = corr_matrix.columns
     vars2drop: list = []
+
+    # Iterate over the variables and check correlations
     for v1 in variables:
         vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= min_threshold]
-        vars_corr.drop(v1, inplace=True)
-        if len(vars_corr) > 1:
+        vars_corr.drop(v1, inplace=True)  # Remove self-correlation
+        if len(vars_corr) > 1:  # Check if more than one correlated variable
             lst_corr = list(vars_corr.index)
             for v2 in lst_corr:
                 if v2 not in vars2drop:
                     vars2drop.append(v2)
+
     return vars2drop
 
 

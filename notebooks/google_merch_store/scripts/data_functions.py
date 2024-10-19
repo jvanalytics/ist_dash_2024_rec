@@ -987,5 +987,156 @@ def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
     return df_minmax
 
 
+def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_features_to_keep=10,exclude=['day_of_year'],target='returning_user') -> DataFrame:
+
+    from dslabs_functions import select_low_variance_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+
+    df_copy=df.copy()
+    
+    vars2drop: list[str] = select_low_variance_variables(df_copy, max_threshold=max_threshold, min_features_to_keep=min_features_to_keep,exclude=exclude, target=target)
+    
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+    return df_vars_drop
+
+
+def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['day_of_year'], target='returning_user')-> DataFrame:
+
+    from dslabs_functions import select_redundant_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+    
+    df_copy=df.copy()
+
+    vars2drop = select_redundant_variables(df_copy, min_threshold=min_threshold,exclude=exclude, target=target)
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+
+    return df_vars_drop
+
+
+def apply_balanced_downsampling(df: DataFrame,target='returning_user') -> DataFrame:
+
+    df_copy=df.copy()
+
+
+    # Ensure positive_class and negative_class are defined and match the target values
+    positive_class = 1  # Or whatever your positive class value is
+    negative_class = 0  # Or whatever your negative class value is
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Downsample the majority class to match the size of the minority class
+    df_majority_downsampled = df_majority.sample(n=len(df_minority), random_state=42)
+
+    # Combine the downsampled majority class with the minority class
+    df_balanced = pd.concat([df_majority_downsampled, df_minority])
+
+    # sort  the combined dataset
+    df_balanced.sort_values(by='day_of_year', inplace=True)
+    
+
+    # Check the new class distribution to verify the balance
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    
+    return df_balanced
+
+
+def apply_balanced_hybrid(df, target, minority_ratio=0.5):
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    # Define positive and negative classes
+    positive_class = 1  # Modify as per your positive class value
+    negative_class = 0  # Modify as per your negative class value
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the current class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Sort by 'day_of_year' (or another time-related feature) to ensure the data is split based on time
+    df_majority.sort_values(by='day_of_year', inplace=True)
+    df_minority.sort_values(by='day_of_year', inplace=True)
+
+    # Determine the desired size for the final dataset
+    total_majority_samples = len(df_majority)
+    # total_minority_samples = len(df_minority)
+    
+    # Set the ratio for the majority and minority classes
+    desired_minority_ratio = minority_ratio
+    desired_majority_ratio = 1-minority_ratio
+
+
+    # Calculate the new majority size (XX% of the total number of majority samples)
+    downsampled_majority_size = int(desired_majority_ratio * total_majority_samples)
+
+    # Calculate the corresponding upsampled minority size (XX% of the downsampled majority size)
+    upsampled_minority_size = int(downsampled_majority_size * (desired_minority_ratio / desired_majority_ratio))
+    
+    # Downsample the majority class (keeping the older data based on 'day_of_year')
+    df_majority_downsampled = df_majority.head(downsampled_majority_size)
+
+    # Upsample the minority class to match the desired minority size for a XX/XX split
+    df_minority_upsampled = df_minority.sample(n=upsampled_minority_size, replace=True)
+
+    # Combine the downsampled majority and upsampled minority classes
+    df_balanced = pd.concat([df_majority_downsampled, df_minority_upsampled])
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_balanced.sort_values(by='day_of_year', inplace=True)
+
+    # Check the new class distribution
+    print(f"Hybrid class distribution ({desired_majority_ratio*100}/{desired_minority_ratio*100}):\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    return df_balanced
+
+
+
+def apply_balanced_smote(df,target='returning_user'):
+
+    from imblearn.over_sampling import SMOTE
+
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+
+    # Separate the features (X) and the target (y)
+    X = df_copy.drop(columns=[target])
+    y = df_copy[target]
+
+    # Apply SMOTE to balance the data
+    smote = SMOTE(random_state=42)
+    X_res, y_res = smote.fit_resample(X, y)
+
+    # Recombine the features and target into a single dataframe
+    df_smote = pd.concat([pd.DataFrame(X_res, columns=X.columns), pd.DataFrame(y_res, columns=[target])], axis=1)
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_smote.sort_values(by='day_of_year', inplace=True)
+
+    print(f"New class distribution:\n{df_smote[target].value_counts(normalize=True) * 100}\n")
+
+
+    return df_smote
+
 print("data_functions lodaded")
 
