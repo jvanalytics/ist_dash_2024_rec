@@ -396,6 +396,11 @@ def knn_study(
     return best_model, best_params
 
 
+# Define a function to sample 10% from each group
+def sample_per_day(group, fraction=0.1):
+    return group.sample(frac=fraction)
+
+
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Dict
@@ -874,6 +879,264 @@ def gradient_boosting_study(
     )
 
     return best_model, best_params
+
+from numpy import ndarray
+from pandas import concat
+from sklearn.impute import SimpleImputer, KNNImputer
+from dslabs_functions import get_variable_types, mvi_by_filling
+
+
+def apply_missing_values_frequent(df):
+
+    df_copy=df.copy()
+    df_copy = mvi_by_filling(df_copy, strategy="frequent")
+
+    return df_copy
+
+
+def apply_missing_values_remove_cols_and_any_na_rows(df,cols):
+
+    df_copy=df.copy()
+
+    # pass cols list to drop
+    df_copy = df_copy.drop(cols, axis=1)
+
+    # drop remaining records where there are nulls
+    df_copy = df_copy.dropna(axis=0, how="any")
+
+    return df_copy
+
+
+from dslabs_functions import (
+    NR_STDEV,
+    get_variable_types,
+    determine_outlier_thresholds_for_var,
+)
+
+def truncate_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    df_copy[outlier_var] = df_copy[outlier_var].apply(
+        lambda x: top if x > top else bottom if x < bottom else x
+    )
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+
+    return df_copy
+
+
+from pandas import DataFrame, Series
+
+def drop_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    outliers: Series = df_copy[(df_copy[outlier_var] > top) | (df_copy[outlier_var] < bottom)]
+
+    df_copy.drop(outliers.index, axis=0, inplace=True)
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+    return df_copy
+
+
+from sklearn.preprocessing import StandardScaler
+
+def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply scaling to only the feature columns
+    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_zscore[target] = target_data
+
+    return df_zscore
+
+
+from sklearn.preprocessing import MinMaxScaler
+def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply MinMax scaling to the feature columns only
+    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_minmax[target] = target_data  # Add the unscaled target column back
+
+    return df_minmax
+
+
+def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_features_to_keep=10,exclude=['day_of_year'],target='returning_user') -> DataFrame:
+
+    from dslabs_functions import select_low_variance_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+
+    df_copy=df.copy()
+    
+    vars2drop: list[str] = select_low_variance_variables(df_copy, max_threshold=max_threshold, min_features_to_keep=min_features_to_keep,exclude=exclude, target=target)
+    
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+    return df_vars_drop
+
+
+def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['day_of_year'], target='returning_user')-> DataFrame:
+
+    from dslabs_functions import select_redundant_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+    
+    df_copy=df.copy()
+
+    vars2drop = select_redundant_variables(df_copy, min_threshold=min_threshold,exclude=exclude, target=target)
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+
+    return df_vars_drop
+
+
+def apply_balanced_downsampling(df: DataFrame,target='returning_user') -> DataFrame:
+
+    df_copy=df.copy()
+
+
+    # Ensure positive_class and negative_class are defined and match the target values
+    positive_class = 1  # Or whatever your positive class value is
+    negative_class = 0  # Or whatever your negative class value is
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Downsample the majority class to match the size of the minority class
+    df_majority_downsampled = df_majority.sample(n=len(df_minority), random_state=42)
+
+    # Combine the downsampled majority class with the minority class
+    df_balanced = pd.concat([df_majority_downsampled, df_minority])
+
+    # sort  the combined dataset
+    df_balanced.sort_values(by='day_of_year', inplace=True)
+    
+
+    # Check the new class distribution to verify the balance
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    
+    return df_balanced
+
+
+def apply_balanced_hybrid(df, target, minority_ratio=0.5):
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    # Define positive and negative classes
+    positive_class = 1  # Modify as per your positive class value
+    negative_class = 0  # Modify as per your negative class value
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the current class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Sort by 'day_of_year' (or another time-related feature) to ensure the data is split based on time
+    df_majority.sort_values(by='day_of_year', inplace=True)
+    df_minority.sort_values(by='day_of_year', inplace=True)
+
+    # Determine the desired size for the final dataset
+    total_majority_samples = len(df_majority)
+    # total_minority_samples = len(df_minority)
+    
+    # Set the ratio for the majority and minority classes
+    desired_minority_ratio = minority_ratio
+    desired_majority_ratio = 1-minority_ratio
+
+
+    # Calculate the new majority size (XX% of the total number of majority samples)
+    downsampled_majority_size = int(desired_majority_ratio * total_majority_samples)
+
+    # Calculate the corresponding upsampled minority size (XX% of the downsampled majority size)
+    upsampled_minority_size = int(downsampled_majority_size * (desired_minority_ratio / desired_majority_ratio))
+    
+    # Downsample the majority class (keeping the older data based on 'day_of_year')
+    df_majority_downsampled = df_majority.head(downsampled_majority_size)
+
+    # Upsample the minority class to match the desired minority size for a XX/XX split
+    df_minority_upsampled = df_minority.sample(n=upsampled_minority_size, replace=True)
+
+    # Combine the downsampled majority and upsampled minority classes
+    df_balanced = pd.concat([df_majority_downsampled, df_minority_upsampled])
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_balanced.sort_values(by='day_of_year', inplace=True)
+
+    # Check the new class distribution
+    print(f"Hybrid class distribution ({desired_majority_ratio*100}/{desired_minority_ratio*100}):\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    return df_balanced
+
+
+
+def apply_balanced_smote(df,target='returning_user'):
+
+    from imblearn.over_sampling import SMOTE
+
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+
+    # Separate the features (X) and the target (y)
+    X = df_copy.drop(columns=[target])
+    y = df_copy[target]
+
+    # Apply SMOTE to balance the data
+    smote = SMOTE(random_state=42)
+    X_res, y_res = smote.fit_resample(X, y)
+
+    # Recombine the features and target into a single dataframe
+    df_smote = pd.concat([pd.DataFrame(X_res, columns=X.columns), pd.DataFrame(y_res, columns=[target])], axis=1)
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_smote.sort_values(by='day_of_year', inplace=True)
+
+    print(f"New class distribution:\n{df_smote[target].value_counts(normalize=True) * 100}\n")
+
+
+    return df_smote
 
 print("data_functions lodaded")
 
