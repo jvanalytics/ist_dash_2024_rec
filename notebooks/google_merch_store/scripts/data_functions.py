@@ -1023,7 +1023,7 @@ def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['d
     return df_vars_drop
 
 
-def apply_balanced_downsampling(df: DataFrame,target='returning_user') -> DataFrame:
+def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='day_of_year') -> DataFrame:
 
     df_copy=df.copy()
 
@@ -1046,7 +1046,7 @@ def apply_balanced_downsampling(df: DataFrame,target='returning_user') -> DataFr
     df_balanced = pd.concat([df_majority_downsampled, df_minority])
 
     # sort  the combined dataset
-    df_balanced.sort_values(by='day_of_year', inplace=True)
+    df_balanced.sort_values(by=sort_by, inplace=True)
     
 
     # Check the new class distribution to verify the balance
@@ -1056,7 +1056,7 @@ def apply_balanced_downsampling(df: DataFrame,target='returning_user') -> DataFr
     return df_balanced
 
 
-def apply_balanced_hybrid(df, target, minority_ratio=0.5):
+def apply_balanced_hybrid(df, target='returning_user', minority_ratio=0.5,sort_by='day_of_year'):
     # Create a copy of the dataframe
     df_copy = df.copy()
 
@@ -1072,8 +1072,8 @@ def apply_balanced_hybrid(df, target, minority_ratio=0.5):
     print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
 
     # Sort by 'day_of_year' (or another time-related feature) to ensure the data is split based on time
-    df_majority.sort_values(by='day_of_year', inplace=True)
-    df_minority.sort_values(by='day_of_year', inplace=True)
+    df_majority.sort_values(by=sort_by, inplace=True)
+    df_minority.sort_values(by=sort_by, inplace=True)
 
     # Determine the desired size for the final dataset
     total_majority_samples = len(df_majority)
@@ -1100,7 +1100,7 @@ def apply_balanced_hybrid(df, target, minority_ratio=0.5):
     df_balanced = pd.concat([df_majority_downsampled, df_minority_upsampled])
 
     # Sort the dataset by 'day_of_year' again if needed
-    df_balanced.sort_values(by='day_of_year', inplace=True)
+    df_balanced.sort_values(by=sort_by, inplace=True)
 
     # Check the new class distribution
     print(f"Hybrid class distribution ({desired_majority_ratio*100}/{desired_minority_ratio*100}):\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
@@ -1109,7 +1109,7 @@ def apply_balanced_hybrid(df, target, minority_ratio=0.5):
 
 
 
-def apply_balanced_smote(df,target='returning_user'):
+def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
 
     from imblearn.over_sampling import SMOTE
 
@@ -1131,7 +1131,7 @@ def apply_balanced_smote(df,target='returning_user'):
     df_smote = pd.concat([pd.DataFrame(X_res, columns=X.columns), pd.DataFrame(y_res, columns=[target])], axis=1)
 
     # Sort the dataset by 'day_of_year' again if needed
-    df_smote.sort_values(by='day_of_year', inplace=True)
+    df_smote.sort_values(by=sort_by, inplace=True)
 
     print(f"New class distribution:\n{df_smote[target].value_counts(normalize=True) * 100}\n")
 
