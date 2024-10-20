@@ -1023,6 +1023,39 @@ def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['d
     return df_vars_drop
 
 
+def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'returning_user', desired_ratio: float = 0.85, sort_by: str = 'day_of_year') -> pd.DataFrame:
+    df_copy = df.copy()
+
+    positive_class = 1  # Assuming positive class is 1
+    negative_class = 0  # Assuming negative class is 0
+
+    # Separate positive and negative classes
+    df_positive = df_copy[df_copy[target] == positive_class]  # Positive class
+    df_negative = df_copy[df_copy[target] == negative_class]  # Negative class
+
+    # Calculate total desired size based on keeping positive class fixed
+    current_positive_size = len(df_positive)
+    total_desired_size = int(current_positive_size / (1 - desired_ratio))
+
+    # Calculate how many negatives we need to reach the desired total size
+    target_negative_size = total_desired_size - current_positive_size
+
+    # Upsample the negative class to match the target size
+    df_negative_upsampled = df_negative.sample(n=target_negative_size, replace=True, random_state=42)
+
+    # Combine positive class with the upsampled negative class
+    df_balanced = pd.concat([df_positive, df_negative_upsampled])
+
+    # Reset the index and sort the dataset
+    df_balanced.reset_index(drop=True, inplace=True)
+    df_balanced.sort_values(by=sort_by, inplace=True)
+
+    # Print new class distribution
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    return df_balanced
+
+
 def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='day_of_year') -> DataFrame:
 
     df_copy=df.copy()
