@@ -510,13 +510,18 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
     return df
 
 
+
 def select_low_variance_variables(
     data: DataFrame, 
     max_threshold: float, 
-    target: str = "returning_user",
-    min_features_to_keep: int = 10  # Minimum number of features to retain
+    target: str = "is_purchase",
+    min_features_to_keep: int = 10,  # Minimum number of features to retain
+    exclude: list[str] = ["day"]  # Columns to exclude
 ) -> list:
-    summary5: DataFrame = data.describe()
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = df.drop(columns=exclude, errors='ignore')
+    
+    summary5: DataFrame = data_filtered.describe()
 
     # Calculate variance (standard deviation squared)
     variances = summary5.loc["std"] ** 2
@@ -529,11 +534,11 @@ def select_low_variance_variables(
         vars2drop = vars2drop.drop(target)
 
     # Safeguard: Ensure a minimum number of features are retained
-    remaining_features = data.drop(vars2drop, axis=1).shape[1]
+    remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
     if remaining_features < min_features_to_keep:
         print(f"Threshold too strict, keeping at least {min_features_to_keep} features.")
         vars2drop = summary5.columns[variances < max_threshold]
-        remaining_features = data.drop(vars2drop, axis=1).shape[1]
+        remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
 
         # If still too few features, skip dropping
         if remaining_features < min_features_to_keep:
@@ -543,8 +548,8 @@ def select_low_variance_variables(
     print(f"Variance threshold: {max_threshold}, Remaining features: {remaining_features}")
     print(f"Variables to drop: {list(vars2drop)}")
 
+    # Return the columns to drop, while preserving the excluded ones
     return list(vars2drop.values)
-
 
 
 from math import ceil
@@ -554,11 +559,11 @@ def study_variance_for_feature_selection(
     train: DataFrame,
     test: DataFrame,
     target: str = "class",
-    max_threshold: float = 0.8,
+    max_threshold: float = 1,
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
-    min_features_to_keep: int = 10  # Minimum features safeguard
+    min_features_to_keep: int = 5  # Minimum features safeguard
 ) -> dict:
     # Generate the range of variance thresholds to test
     options: list[float] = [
@@ -635,26 +640,31 @@ def study_variance_for_feature_selection(
     return results
 
 
+def select_redundant_variables(
+    data: DataFrame, 
+    min_threshold: float = 0.90, 
+    target: str = "class", 
+    exclude: list[str] = ["day"]  # Columns to exclude from redundancy check
+) -> list:
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = df.drop(columns=[target] + exclude, errors='ignore')
 
-
-
-def select_redundant_variables(data: DataFrame, min_threshold: float = 0.90, target: str = "class") -> list:
-    df: DataFrame = data.drop(target, axis=1, inplace=False)
-    corr_matrix: DataFrame = abs(df.corr())
+    # Calculate the correlation matrix
+    corr_matrix: DataFrame = abs(data_filtered.corr())
     variables: Index[str] = corr_matrix.columns
     vars2drop: list = []
+
+    # Iterate over the variables and check correlations
     for v1 in variables:
         vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= min_threshold]
-        vars_corr.drop(v1, inplace=True)
-        if len(vars_corr) > 1:
+        vars_corr.drop(v1, inplace=True)  # Remove self-correlation
+        if len(vars_corr) > 1:  # Check if more than one correlated variable
             lst_corr = list(vars_corr.index)
             for v2 in lst_corr:
                 if v2 not in vars2drop:
                     vars2drop.append(v2)
+
     return vars2drop
-
-
-
 
 def study_redundancy_for_feature_selection(
     train: DataFrame,
@@ -738,6 +748,8 @@ def study_redundancy_for_feature_selection(
     savefig(f"images/{file_tag}_fs_redundancy_{metric}_study.png")
     return results
 
+
+
 def apply_feature_selection(
     train: DataFrame,
     test: DataFrame,
@@ -759,6 +771,7 @@ def apply_feature_selection(
 
 DELTA_IMPROVE: float = 0.001
 
+from sklearn.metrics import fbeta_score
 
 CLASS_EVAL_METRICS: dict[str, Callable] = {
     "accuracy": accuracy_score,
@@ -766,15 +779,14 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
     "precision": precision_score,
     "auc": roc_auc_score,
     "f1": f1_score,
+    "f2": lambda y_true, y_pred: fbeta_score(y_true, y_pred, beta=2),  # Adding F2 score   
 }
 
 
 def run_NB(trnX, trnY, tstX, tstY, metric: str = "accuracy") -> dict[str, float]:
     estimators: dict[str, GaussianNB | BernoulliNB] = {
         "GaussianNB": GaussianNB(),
-        #we are not goin to use this one, because we have negative values in cyclical variables. And this method can't work with negative values
-        
-        #"MultinomialNB": MultinomialNB(),
+        # "MultinomialNB": MultinomialNB(), # removed since we have negative values. only works with positive
         "BernoulliNB": BernoulliNB(),
     }
     best_model: GaussianNB | BernoulliNB = None  # type: ignore
@@ -832,19 +844,67 @@ def evaluate_approach(
     return eval
 
 
+
+
+from typing import Union
+import pandas as pd
+from pandas import DataFrame
+from numpy import array, ndarray
+
+# adapted to read from memory
 def read_train_test_from_files(
-    train_fn: str, test_fn: str, target: str = "class"
+    train_fn: Union[str, DataFrame], test_fn: Union[str, DataFrame], target: str = "class"
 ) -> tuple[ndarray, ndarray, array, array, list, list]:
-    train: DataFrame = read_csv(train_fn, index_col=None)
+    """
+    Reads training and test data from either CSV files or DataFrames, and splits
+    the data into features and target.
+
+    Parameters:
+    -----------
+    train_fn : Union[str, DataFrame]
+        File path to the training CSV or a DataFrame object.
+    test_fn : Union[str, DataFrame]
+        File path to the test CSV or a DataFrame object.
+    target : str, default="class"
+        The name of the target column.
+
+    Returns:
+    --------
+    tuple : (trnX, tstX, trnY, tstY, labels, features)
+        - trnX: Training feature set as ndarray.
+        - tstX: Test feature set as ndarray.
+        - trnY: Training labels as array.
+        - tstY: Test labels as array.
+        - labels: List of unique target values.
+        - features: List of feature names (column names).
+    """
+    # Check if train_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(train_fn, str):
+        train: DataFrame = pd.read_csv(train_fn, index_col=None)
+    else:
+        train: DataFrame = train_fn.copy()  # Use the provided DataFrame directly
+
+    # Extract and sort unique target labels
     labels: list = list(train[target].unique())
     labels.sort()
+
+    # Separate features (X) and target (Y) for training data
     trnY: array = train.pop(target).to_list()
     trnX: ndarray = train.values
 
-    test: DataFrame = read_csv(test_fn, index_col=None)
+    # Check if test_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(test_fn, str):
+        test: DataFrame = pd.read_csv(test_fn, index_col=None)
+    else:
+        test: DataFrame = test_fn.copy()  # Use the provided DataFrame directly
+
+    # Separate features (X) and target (Y) for test data
     tstY: array = test.pop(target).to_list()
     tstX: ndarray = test.values
+
     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+
+
 
 
 def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
@@ -865,6 +925,44 @@ def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes 
     for i, j in product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
         ax.text(j, i, format(cnf_matrix[i, j], "d"), color="y", horizontalalignment="center")
     return ax
+
+
+
+
+
+#def read_train_test_from_files(
+#    train_fn: str, test_fn: str, target: str = "class"
+#) -> tuple[ndarray, ndarray, array, array, list, list]:
+#    train: DataFrame = read_csv(train_fn, index_col=None)
+#    labels: list = list(train[target].unique())
+#    labels.sort()
+#    trnY: array = train.pop(target).to_list()
+#    trnX: ndarray = train.values
+#
+#    test: DataFrame = read_csv(test_fn, index_col=None)
+#    tstY: array = test.pop(target).to_list()
+#    tstX: ndarray = test.values
+#    return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+#
+#
+#def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
+#    if ax is None:
+#        ax = gca()
+#    title = "Confusion matrix"
+#    set_printoptions(precision=2)
+#    tick_marks: ndarray = arange(0, len(classes_names), 1)
+#    ax.set_title(title)
+#    ax.set_ylabel("True label")
+#    ax.set_xlabel("Predicted label")
+#    ax.set_xticks(tick_marks)
+#    ax.set_yticks(tick_marks)
+#    ax.set_xticklabels(classes_names)
+#    ax.set_yticklabels(classes_names)
+#    ax.imshow(cnf_matrix, interpolation="nearest", cmap=cmap_blues)
+#
+#    for i, j in product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
+#        ax.text(j, i, format(cnf_matrix[i, j], "d"), color="y", horizontalalignment="center")
+#    return ax
 
 
 def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class") -> Axes:  # type: ignore
