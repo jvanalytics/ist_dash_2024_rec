@@ -1052,7 +1052,7 @@ def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'returning_use
 
     # Print new class distribution
     print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
-
+    print(df_balanced.shape)
     return df_balanced
 
 

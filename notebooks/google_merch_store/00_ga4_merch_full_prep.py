@@ -68,7 +68,7 @@ data=data_functions.apply_min_max_scaler(data,target)
 
 # ---------------- feature engineering
 
-data=data_functions.apply_remove_low_variance_variables(data,max_threshold=0.08, target=target, min_features_to_keep=3, exclude=['day_of_year'])
+# data=data_functions.apply_remove_low_variance_variables(data,max_threshold=0.08, target=target, min_features_to_keep=3, exclude=['day_of_year'])
 
 
 
@@ -95,6 +95,7 @@ print(f"Current time before final NB/KNN evaluation: {datetime.now()}")
 
 eval_metric='f2'
 eval_final: dict[str, list] = dslabs_functions.evaluate_approach(train, test, target='returning_user', metric=eval_metric)
+
 
 print(f'final evaluation: {eval_final}')
 print(f"Current time after final NB/KNN evaluation: {datetime.now()}")
