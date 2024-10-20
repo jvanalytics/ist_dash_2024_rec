@@ -358,6 +358,92 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
 
 
 
+from dslabs_functions import (
+    NR_STDEV,
+    get_variable_types,
+    determine_outlier_thresholds_for_var,
+)
+
+def truncate_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    df_copy[outlier_var] = df_copy[outlier_var].apply(
+        lambda x: top if x > top else bottom if x < bottom else x
+    )
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+
+    return df_copy
+
+
+from pandas import DataFrame, Series
+
+def drop_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    outliers: Series = df_copy[(df_copy[outlier_var] > top) | (df_copy[outlier_var] < bottom)]
+
+    df_copy.drop(outliers.index, axis=0, inplace=True)
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+    return df_copy
+
+
+from sklearn.preprocessing import StandardScaler
+
+def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply scaling to only the feature columns
+    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_zscore[target] = target_data
+
+    return df_zscore
+
+
+from sklearn.preprocessing import MinMaxScaler
+def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply MinMax scaling to the feature columns only
+    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_minmax[target] = target_data  # Add the unscaled target column back
+
+    return df_minmax
+
+# Define a function to sample 10% from each group
+def sample_per_day(group, fraction=0.1):
+    return group.sample(frac=fraction)
+
+
+
+
 from typing import Literal
 from numpy import array, ndarray
 from sklearn.neighbors import KNeighborsClassifier
@@ -394,6 +480,33 @@ def knn_study(
     plot_multiline_chart(kvalues, values, title=f'KNN Models ({metric})', xlabel='k', ylabel=metric, percentage=True)
 
     return best_model, best_params
+
+
+from numpy import ndarray
+from pandas import concat
+from sklearn.impute import SimpleImputer, KNNImputer
+from dslabs_functions import get_variable_types, mvi_by_filling
+
+
+def apply_missing_values_frequent(df):
+
+    df_copy=df.copy()
+    df_copy = mvi_by_filling(df_copy, strategy="frequent")
+
+    return df_copy
+
+
+def apply_missing_values_remove_cols_and_any_na_rows(df,cols):
+
+    df_copy=df.copy()
+
+    # pass cols list to drop
+    df_copy = df_copy.drop(cols, axis=1)
+
+    # drop remaining records where there are nulls
+    df_copy = df_copy.dropna(axis=0, how="any")
+
+    return df_copy
 
 
 import numpy as np
@@ -492,7 +605,7 @@ from dslabs_functions import plot_multibar_chart, CLASS_EVAL_METRICS, run_NB, ru
 
 
 def evaluate_approach(
-    train: DataFrame, test: DataFrame, target: str = "returning_user", metric: str = "accuracy"
+    train: DataFrame, test: DataFrame, target: str = "is_purchase", metric: str = "accuracy"
 ) -> dict[str, list]:
     trnY = train.pop(target).values
     trnX: ndarray = train.values
@@ -512,3 +625,40 @@ print("data_functions loaded")
 
 
 
+from typing import Literal
+from numpy import array, ndarray
+from matplotlib.pyplot import figure, savefig, show
+from sklearn.tree import DecisionTreeClassifier
+from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, read_train_test_from_files
+from dslabs_functions import plot_evaluation_results, plot_multiline_chart
+
+
+def trees_study(
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, d_max: int=10, lag:int=2, metric='accuracy'
+        ) -> tuple:
+    criteria: list[Literal['entropy', 'gini']] = ['entropy', 'gini']
+    depths: list[int] = [i for i in range(2, d_max+1, lag)]
+
+    best_model: DecisionTreeClassifier | None = None
+    best_params: dict = {'name': 'DT', 'metric': metric, 'params': ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    for c in criteria:
+        y_tst_values: list[float] = []
+        for d in depths:
+            clf = DecisionTreeClassifier(max_depth=d, criterion=c, min_impurity_decrease=0)
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance = eval
+                best_params['params'] = (c, d)
+                best_model = clf
+            # print(f'DT {c} and d={d}')
+        values[c] = y_tst_values
+    print(f'DT best with {best_params['params'][0]} and d={best_params['params'][1]}')
+    plot_multiline_chart(depths, values, title=f'DT Models ({metric})', xlabel='d', ylabel=metric, percentage=True)
+
+    return best_model, best_params
