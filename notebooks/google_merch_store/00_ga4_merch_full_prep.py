@@ -49,29 +49,24 @@ data.sort_values(by='day_of_year', inplace=True)
 print(f"Encoded Data Load completed at: {datetime.now()}")
 
 
-# missing values
+# --------- missing values
 
 data=data_functions.apply_missing_values_frequent(data)
 
-
-
-
-# outliers
-
+# ----------------- outliers
 # no improvement
 
 # var='engagement_time_msec'
 # summary5=data[[var]].describe(include="all")
-
 # data=data_functions.drop_outliers(data, summary5, var)
 
 
-# scaling
+# ------------ scaling
 
 data=data_functions.apply_standard_scaler(data,target)
 
 
-# feature engineering
+# ---------------- feature engineering
 
 data=data_functions.apply_remove_low_variance_variables(data,max_threshold=0.03, target=target, min_features_to_keep=10, exclude=['day_of_year'])
 
