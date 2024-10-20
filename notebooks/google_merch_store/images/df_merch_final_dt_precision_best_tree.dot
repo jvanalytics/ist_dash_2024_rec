@@ -1,17 +1,17 @@
 digraph Tree {
 node [shape=box, style="filled, rounded", color="black", fontname="helvetica"] ;
 edge [fontname="helvetica"] ;
-0 [label=<traffic_source_source &le; -1.9<br/>samples = 374446<br/>value = [187223, 187223]<br/>class = 0.0>, fillcolor="#ffffff"] ;
-1 [label=<event_name &le; -0.43<br/>samples = 45746<br/>value = [33992, 11754]<br/>class = 0.0>, fillcolor="#eead7d"] ;
+0 [label=<traffic_source_source &le; 0.0<br/>samples = 373348<br/>value = [186674, 186674]<br/>class = 0.0>, fillcolor="#ffffff"] ;
+1 [label=<event_name &le; 0.42<br/>samples = 46851<br/>value = [34245, 12606]<br/>class = 0.0>, fillcolor="#efaf82"] ;
 0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
-2 [label=<samples = 18800<br/>value = [15712, 3088]<br/>class = 0.0>, fillcolor="#ea9a60"] ;
+2 [label=<samples = 19267<br/>value = [15905, 3362]<br/>class = 0.0>, fillcolor="#ea9c63"] ;
 1 -> 2 ;
-3 [label=<samples = 26946<br/>value = [18280, 8666]<br/>class = 0.0>, fillcolor="#f1bd97"] ;
+3 [label=<samples = 27584<br/>value = [18340, 9244]<br/>class = 0.0>, fillcolor="#f2c19d"] ;
 1 -> 3 ;
-4 [label=<traffic_source_medium &le; -0.11<br/>samples = 328700<br/>value = [153231, 175469]<br/>class = 1.0>, fillcolor="#e6f3fc"] ;
+4 [label=<traffic_source_source &le; 0.5<br/>samples = 326497<br/>value = [152429, 174068]<br/>class = 1.0>, fillcolor="#e6f3fc"] ;
 0 -> 4 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
-5 [label=<samples = 63382<br/>value = [16763, 46619]<br/>class = 1.0>, fillcolor="#80c0ee"] ;
+5 [label=<samples = 49879<br/>value = [8134, 41745]<br/>class = 1.0>, fillcolor="#60b0ea"] ;
 4 -> 5 ;
-6 [label=<samples = 265318<br/>value = [136468, 128850]<br/>class = 0.0>, fillcolor="#fef8f4"] ;
+6 [label=<samples = 276618<br/>value = [144295, 132323]<br/>class = 0.0>, fillcolor="#fdf5ef"] ;
 4 -> 6 ;
 }
