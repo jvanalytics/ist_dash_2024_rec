@@ -987,7 +987,7 @@ def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
     return df_minmax
 
 
-def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_features_to_keep=10,exclude=['day_of_year'],target='returning_user') -> DataFrame:
+def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_features_to_keep=10,exclude=['day_of_year'],target='is_clicked') -> DataFrame:
 
     from dslabs_functions import select_low_variance_variables
     # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
@@ -1005,7 +1005,7 @@ def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_fe
     return df_vars_drop
 
 
-def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['day_of_year'], target='returning_user')-> DataFrame:
+def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['day_of_year'], target='is_clicked')-> DataFrame:
 
     from dslabs_functions import select_redundant_variables
     # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
@@ -1023,7 +1023,7 @@ def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['d
     return df_vars_drop
 
 
-def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'returning_user', desired_ratio: float = 0.85, sort_by: str = 'day_of_year') -> pd.DataFrame:
+def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'is_clicked', desired_ratio: float = 0.85, sort_by: str = 'day_of_year') -> pd.DataFrame:
     df_copy = df.copy()
 
     positive_class = 1  # Assuming positive class is 1
@@ -1056,7 +1056,7 @@ def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'returning_use
     return df_balanced
 
 
-def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='day_of_year') -> DataFrame:
+def apply_balanced_downsampling(df: DataFrame,target='is_clicked',sort_by='day_of_year') -> DataFrame:
 
     df_copy=df.copy()
 
@@ -1088,8 +1088,37 @@ def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='d
     
     return df_balanced
 
+def apply_balanced_oversampling(df: DataFrame, target='is_clicked', sort_by='day_of_year') -> DataFrame:
 
-def apply_balanced_hybrid(df, target='returning_user', minority_ratio=0.5,sort_by='day_of_year'):
+    df_copy = df.copy()
+
+    # Ensure positive_class and negative_class are defined and match the target values
+    positive_class = 1  # Or whatever your positive class value is
+    negative_class = 0  # Or whatever your negative class value is
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Oversample the minority class to match the size of the majority class
+    df_minority_oversampled = df_minority.sample(n=len(df_majority), replace=True, random_state=42)
+
+    # Combine the oversampled minority class with the majority class
+    df_balanced = pd.concat([df_minority_oversampled, df_majority])
+
+    # Sort the combined dataset
+    df_balanced.sort_values(by=sort_by, inplace=True)
+
+    # Check the new class distribution to verify the balance
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    return df_balanced
+
+
+def apply_balanced_hybrid(df, target='is_clicked', minority_ratio=0.5,sort_by='day_of_year'):
     # Create a copy of the dataframe
     df_copy = df.copy()
 
@@ -1142,7 +1171,7 @@ def apply_balanced_hybrid(df, target='returning_user', minority_ratio=0.5,sort_b
 
 
 
-def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
+def apply_balanced_smote(df,target='is_clicked',sort_by='day_of_year'):
 
     from imblearn.over_sampling import SMOTE
 
