@@ -396,6 +396,11 @@ def knn_study(
     return best_model, best_params
 
 
+# Define a function to sample 10% from each group
+def sample_per_day(group, fraction=0.1):
+    return group.sample(frac=fraction)
+
+
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Dict
@@ -485,6 +490,52 @@ def split_data_save_csv(X: pd.DataFrame, y: pd.Series, data_columns: List[str], 
     return train, test
 
 
+    
+from typing import Tuple, Optional
+
+def simple_split_df(df: pd.DataFrame, sort_by: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits a DataFrame into train and test sets based on a 70/30 split ratio.
+    Optionally, sorts the DataFrame by a specified column before splitting.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        The DataFrame to be split.
+
+    sort_by : Optional[str], default=None
+        The column name by which to sort the DataFrame before splitting.
+        If None, no sorting will be applied.
+
+    Returns:
+    --------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        A tuple containing the training set (70%) and test set (30%).
+
+    Example:
+    --------
+    train, test = simple_split_df(data_save, sort_by="date")
+    """
+
+    # Create a copy of the DataFrame to avoid modifying the original
+    df_copy = df.copy()
+
+    # Sort the DataFrame by the specified column if provided
+    if sort_by:
+        df_copy.sort_values(by=sort_by, inplace=True)
+
+    # Determine the split index (70% train, 30% test)
+    split_index = int(len(df_copy) * 0.7)
+
+    # Split the DataFrame into train and test sets
+    train = df_copy.iloc[:split_index]
+    test = df_copy.iloc[split_index:]
+
+    return train, test
+
+
+
+
 from numpy import ndarray
 from pandas import DataFrame, read_csv
 from matplotlib.pyplot import savefig, show, figure
@@ -492,7 +543,7 @@ from dslabs_functions import plot_multibar_chart, CLASS_EVAL_METRICS, run_NB, ru
 
 
 def evaluate_approach(
-    train: DataFrame, test: DataFrame, target: str = "returning_user", metric: str = "accuracy"
+    train: DataFrame, test: DataFrame, target: str = "is_clicked", metric: str = "accuracy"
 ) -> dict[str, list]:
     trnY = train.pop(target).values
     trnX: ndarray = train.values
@@ -508,7 +559,617 @@ def evaluate_approach(
     return eval
 
 
+from typing import Literal
+from numpy import array, ndarray
+from matplotlib.pyplot import figure, savefig, show
+from sklearn.tree import DecisionTreeClassifier
+from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, read_train_test_from_files
+from dslabs_functions import plot_evaluation_results, plot_multiline_chart
 
+
+def trees_study(
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, d_max: int=10, lag:int=2, metric='accuracy'
+        ) -> tuple:
+    criteria: list[Literal['entropy', 'gini']] = ['entropy', 'gini']
+    depths: list[int] = [i for i in range(2, d_max+1, lag)]
+
+    best_model: DecisionTreeClassifier | None = None
+    best_params: dict = {'name': 'DT', 'metric': metric, 'params': ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    for c in criteria:
+        y_tst_values: list[float] = []
+        for d in depths:
+            clf = DecisionTreeClassifier(max_depth=d, criterion=c, min_impurity_decrease=0)
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance = eval
+                best_params['params'] = (c, d)
+                best_model = clf
+            # print(f'DT {c} and d={d}')
+        values[c] = y_tst_values
+    print(f'DT best with {best_params['params'][0]} and d={best_params['params'][1]}')
+    plot_multiline_chart(depths, values, title=f'DT Models ({metric})', xlabel='d', ylabel=metric, percentage=True)
+
+    return best_model, best_params
+
+from numpy import array, ndarray
+from matplotlib.pyplot import figure, savefig, show
+from sklearn.linear_model import LogisticRegression
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import plot_evaluation_results, plot_multiline_chart
+
+
+
+def logistic_regression_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_iterations: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[LogisticRegression | None, dict]:
+    nr_iterations: list[int] = [lag] + [
+        i for i in range(2 * lag, nr_max_iterations + 1, lag)
+    ]
+
+    penalty_types: list[str] = ["l1", "l2"]  # only available if optimizer='liblinear'
+
+    best_model = None
+    best_params: dict = {"name": "LR", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    for type in penalty_types:
+        warm_start = False
+        y_tst_values: list[float] = []
+        for j in range(len(nr_iterations)):
+            clf = LogisticRegression(
+                penalty=type,
+                max_iter=lag,
+                warm_start=warm_start,
+                solver="liblinear",
+                verbose=False,
+            )
+            clf.fit(trnX, trnY)
+            prdY: array = clf.predict(tstX)
+            eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+            y_tst_values.append(eval)
+            warm_start = True
+            if eval - best_performance > DELTA_IMPROVE:
+                best_performance = eval
+                best_params["params"] = (type, nr_iterations[j])
+                best_model: LogisticRegression = clf
+            # print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
+        values[type] = y_tst_values
+    plot_multiline_chart(
+        nr_iterations,
+        values,
+        title=f"LR models ({metric})",
+        xlabel="nr iterations",
+        ylabel=metric,
+        percentage=True,
+    )
+    print(
+        f'LR best for {best_params["params"][1]} iterations (penalty={best_params["params"][0]})'
+    )
+
+    return best_model, best_params
+
+
+from typing import Literal
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.neural_network import MLPClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def mlp_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_iterations: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[MLPClassifier | None, dict]:
+    nr_iterations: list[int] = [lag] + [
+        i for i in range(2 * lag, nr_max_iterations + 1, lag)
+    ]
+
+    lr_types: list[Literal["constant", "invscaling", "adaptive"]] = [
+        "constant",
+        "invscaling",
+        "adaptive",
+    ]  # only used if optimizer='sgd'
+    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
+
+    best_model: MLPClassifier | None = None
+    best_params: dict = {"name": "MLP", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    _, axs = subplots(
+        1, len(lr_types), figsize=(len(lr_types) * HEIGHT, HEIGHT), squeeze=False
+    )
+    for i in range(len(lr_types)):
+        type: str = lr_types[i]
+        values = {}
+        for lr in learning_rates:
+            warm_start: bool = False
+            y_tst_values: list[float] = []
+            for j in range(len(nr_iterations)):
+                clf = MLPClassifier(
+                    learning_rate=type,
+                    learning_rate_init=lr,
+                    max_iter=lag,
+                    warm_start=warm_start,
+                    activation="logistic",
+                    solver="sgd",
+                    verbose=False,
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                warm_start = True
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (type, lr, nr_iterations[j])
+                    best_model = clf
+                # print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
+            values[lr] = y_tst_values
+        plot_multiline_chart(
+            nr_iterations,
+            values,
+            ax=axs[0, i],
+            title=f"MLP with {type}",
+            xlabel="nr iterations",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'MLP best for {best_params["params"][2]} iterations (lr_type={best_params["params"][0]} and lr={best_params["params"][1]}'
+    )
+
+    return best_model, best_params
+
+
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.ensemble import RandomForestClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def random_forests_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_trees: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[RandomForestClassifier | None, dict]:
+    n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
+    max_depths: list[int] = [2, 5, 7]
+    max_features: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    best_model: RandomForestClassifier | None = None
+    best_params: dict = {"name": "RF", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+
+    cols: int = len(max_depths)
+    _, axs = subplots(1, cols, figsize=(cols * HEIGHT, HEIGHT), squeeze=False)
+    for i in range(len(max_depths)):
+        d: int = max_depths[i]
+        values = {}
+        for f in max_features:
+            y_tst_values: list[float] = []
+            for n in n_estimators:
+                clf = RandomForestClassifier(
+                    n_estimators=n, max_depth=d, max_features=f
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (d, f, n)
+                    best_model = clf
+                # print(f'RF d={d} f={f} n={n}')
+            values[f] = y_tst_values
+        plot_multiline_chart(
+            n_estimators,
+            values,
+            ax=axs[0, i],
+            title=f"Random Forests with max_depth={d}",
+            xlabel="nr estimators",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'RF best for {best_params["params"][2]} trees (d={best_params["params"][0]} and f={best_params["params"][1]})'
+    )
+    return best_model, best_params
+
+
+from numpy import array, ndarray
+from matplotlib.pyplot import subplots, figure, savefig, show
+from sklearn.ensemble import GradientBoostingClassifier
+from dslabs_functions import (
+    CLASS_EVAL_METRICS,
+    DELTA_IMPROVE,
+    read_train_test_from_files,
+)
+from dslabs_functions import HEIGHT, plot_evaluation_results, plot_multiline_chart
+
+
+def gradient_boosting_study(
+    trnX: ndarray,
+    trnY: array,
+    tstX: ndarray,
+    tstY: array,
+    nr_max_trees: int = 2500,
+    lag: int = 500,
+    metric: str = "accuracy",
+) -> tuple[GradientBoostingClassifier | None, dict]:
+    n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
+    max_depths: list[int] = [2, 5, 7]
+    learning_rates: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+    best_model: GradientBoostingClassifier | None = None
+    best_params: dict = {"name": "GB", "metric": metric, "params": ()}
+    best_performance: float = 0.0
+
+    values: dict = {}
+    cols: int = len(max_depths)
+    _, axs = subplots(1, cols, figsize=(cols * HEIGHT, HEIGHT), squeeze=False)
+    for i in range(len(max_depths)):
+        d: int = max_depths[i]
+        values = {}
+        for lr in learning_rates:
+            y_tst_values: list[float] = []
+            for n in n_estimators:
+                clf = GradientBoostingClassifier(
+                    n_estimators=n, max_depth=d, learning_rate=lr
+                )
+                clf.fit(trnX, trnY)
+                prdY: array = clf.predict(tstX)
+                eval: float = CLASS_EVAL_METRICS[metric](tstY, prdY)
+                y_tst_values.append(eval)
+                if eval - best_performance > DELTA_IMPROVE:
+                    best_performance = eval
+                    best_params["params"] = (d, lr, n)
+                    best_model = clf
+                # print(f'GB d={d} lr={lr} n={n}')
+            values[lr] = y_tst_values
+        plot_multiline_chart(
+            n_estimators,
+            values,
+            ax=axs[0, i],
+            title=f"Gradient Boosting with max_depth={d}",
+            xlabel="nr estimators",
+            ylabel=metric,
+            percentage=True,
+        )
+    print(
+        f'GB best for {best_params["params"][2]} trees (d={best_params["params"][0]} and lr={best_params["params"][1]}'
+    )
+
+    return best_model, best_params
+
+from numpy import ndarray
+from pandas import concat
+from sklearn.impute import SimpleImputer, KNNImputer
+from dslabs_functions import get_variable_types, mvi_by_filling
+
+
+def apply_missing_values_frequent(df):
+
+    df_copy=df.copy()
+    df_copy = mvi_by_filling(df_copy, strategy="frequent")
+
+    return df_copy
+
+
+def apply_missing_values_remove_cols_and_any_na_rows(df,cols):
+
+    df_copy=df.copy()
+
+    # pass cols list to drop
+    df_copy = df_copy.drop(cols, axis=1)
+
+    # drop remaining records where there are nulls
+    df_copy = df_copy.dropna(axis=0, how="any")
+
+    return df_copy
+
+
+from dslabs_functions import (
+    NR_STDEV,
+    get_variable_types,
+    determine_outlier_thresholds_for_var,
+)
+
+def truncate_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    df_copy[outlier_var] = df_copy[outlier_var].apply(
+        lambda x: top if x > top else bottom if x < bottom else x
+    )
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+
+    return df_copy
+
+
+from pandas import DataFrame, Series
+
+def drop_outliers(df,summary5_df,outlier_var):
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Outlier chapter
+    top, bottom = determine_outlier_thresholds_for_var(summary5_df[outlier_var])
+    outliers: Series = df_copy[(df_copy[outlier_var] > top) | (df_copy[outlier_var] < bottom)]
+
+    df_copy.drop(outliers.index, axis=0, inplace=True)
+
+    print("Data after truncating outliers:", df_copy.shape)
+
+    return df_copy
+
+
+from sklearn.preprocessing import StandardScaler
+
+def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply scaling to only the feature columns
+    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_zscore[target] = target_data
+
+    return df_zscore
+
+
+from sklearn.preprocessing import MinMaxScaler
+def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
+
+    df_copy=df.copy()
+    
+    # this script is available in data_functions originally from DSLabs site in Scaling chapter
+    
+    # Separate the target column from the features
+    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
+    
+    # Apply MinMax scaling to the feature columns only
+    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
+    
+    # Add the target column back to the scaled dataframe
+    df_minmax[target] = target_data  # Add the unscaled target column back
+
+    return df_minmax
+
+
+def apply_remove_low_variance_variables(df: DataFrame,max_threshold=0.024,min_features_to_keep=10,exclude=['day_of_year'],target='returning_user') -> DataFrame:
+
+    from dslabs_functions import select_low_variance_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+
+    df_copy=df.copy()
+    
+    vars2drop: list[str] = select_low_variance_variables(df_copy, max_threshold=max_threshold, min_features_to_keep=min_features_to_keep,exclude=exclude, target=target)
+    
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+    return df_vars_drop
+
+
+def apply_remove_redundant_variables(df: DataFrame,min_threshold=0.4,exclude=['day_of_year'], target='returning_user')-> DataFrame:
+
+    from dslabs_functions import select_redundant_variables
+    # this script is available in data_functions originally from DSLabs site in Feature Selection chapter
+    
+    df_copy=df.copy()
+
+    vars2drop = select_redundant_variables(df_copy, min_threshold=min_threshold,exclude=exclude, target=target)
+    print("columns to drop:", vars2drop)
+
+    df_vars_drop = df_copy.drop(columns=vars2drop, errors='ignore')
+    
+    print("Remaining columns:", df_vars_drop.columns)
+
+
+    return df_vars_drop
+
+
+def apply_upsample_negative_class(df: pd.DataFrame, target: str = 'returning_user', desired_ratio: float = 0.85, sort_by: str = 'day_of_year') -> pd.DataFrame:
+    df_copy = df.copy()
+
+    positive_class = 1  # Assuming positive class is 1
+    negative_class = 0  # Assuming negative class is 0
+
+    # Separate positive and negative classes
+    df_positive = df_copy[df_copy[target] == positive_class]  # Positive class
+    df_negative = df_copy[df_copy[target] == negative_class]  # Negative class
+
+    # Calculate total desired size based on keeping positive class fixed
+    current_positive_size = len(df_positive)
+    total_desired_size = int(current_positive_size / (1 - desired_ratio))
+
+    # Calculate how many negatives we need to reach the desired total size
+    target_negative_size = total_desired_size - current_positive_size
+
+    # Upsample the negative class to match the target size
+    df_negative_upsampled = df_negative.sample(n=target_negative_size, replace=True, random_state=42)
+
+    # Combine positive class with the upsampled negative class
+    df_balanced = pd.concat([df_positive, df_negative_upsampled])
+
+    # Reset the index and sort the dataset
+    df_balanced.reset_index(drop=True, inplace=True)
+    df_balanced.sort_values(by=sort_by, inplace=True)
+
+    # Print new class distribution
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+    print(df_balanced.shape)
+    return df_balanced
+
+
+def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='day_of_year') -> DataFrame:
+
+    df_copy=df.copy()
+
+
+    # Ensure positive_class and negative_class are defined and match the target values
+    positive_class = 1  # Or whatever your positive class value is
+    negative_class = 0  # Or whatever your negative class value is
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Downsample the majority class to match the size of the minority class
+    df_majority_downsampled = df_majority.sample(n=len(df_minority), random_state=42)
+
+    # Combine the downsampled majority class with the minority class
+    df_balanced = pd.concat([df_majority_downsampled, df_minority])
+
+    # sort  the combined dataset
+    df_balanced.sort_values(by=sort_by, inplace=True)
+    
+
+    # Check the new class distribution to verify the balance
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    
+    return df_balanced
+
+
+def apply_balanced_hybrid(df, target='returning_user', minority_ratio=0.5,sort_by='day_of_year'):
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    # Define positive and negative classes
+    positive_class = 1  # Modify as per your positive class value
+    negative_class = 0  # Modify as per your negative class value
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the current class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Sort by 'day_of_year' (or another time-related feature) to ensure the data is split based on time
+    df_majority.sort_values(by=sort_by, inplace=True)
+    df_minority.sort_values(by=sort_by, inplace=True)
+
+    # Determine the desired size for the final dataset
+    total_majority_samples = len(df_majority)
+    # total_minority_samples = len(df_minority)
+    
+    # Set the ratio for the majority and minority classes
+    desired_minority_ratio = minority_ratio
+    desired_majority_ratio = 1-minority_ratio
+
+
+    # Calculate the new majority size (XX% of the total number of majority samples)
+    downsampled_majority_size = int(desired_majority_ratio * total_majority_samples)
+
+    # Calculate the corresponding upsampled minority size (XX% of the downsampled majority size)
+    upsampled_minority_size = int(downsampled_majority_size * (desired_minority_ratio / desired_majority_ratio))
+    
+    # Downsample the majority class (keeping the older data based on 'day_of_year')
+    df_majority_downsampled = df_majority.head(downsampled_majority_size)
+
+    # Upsample the minority class to match the desired minority size for a XX/XX split
+    df_minority_upsampled = df_minority.sample(n=upsampled_minority_size, replace=True)
+
+    # Combine the downsampled majority and upsampled minority classes
+    df_balanced = pd.concat([df_majority_downsampled, df_minority_upsampled])
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_balanced.sort_values(by=sort_by, inplace=True)
+
+    # Check the new class distribution
+    print(f"Hybrid class distribution ({desired_majority_ratio*100}/{desired_minority_ratio*100}):\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
+    return df_balanced
+
+
+
+def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
+
+    from imblearn.over_sampling import SMOTE
+
+    # Create a copy of the dataframe
+    df_copy = df.copy()
+
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+
+    # Separate the features (X) and the target (y)
+    X = df_copy.drop(columns=[target])
+    y = df_copy[target]
+
+    # Apply SMOTE to balance the data
+    smote = SMOTE(random_state=42)
+    X_res, y_res = smote.fit_resample(X, y)
+
+    # Recombine the features and target into a single dataframe
+    df_smote = pd.concat([pd.DataFrame(X_res, columns=X.columns), pd.DataFrame(y_res, columns=[target])], axis=1)
+
+    # Sort the dataset by 'day_of_year' again if needed
+    df_smote.sort_values(by=sort_by, inplace=True)
+
+    print(f"New class distribution:\n{df_smote[target].value_counts(normalize=True) * 100}\n")
+
+
+    return df_smote
 
 print("data_functions lodaded")
 

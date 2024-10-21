@@ -485,9 +485,13 @@ def select_low_variance_variables(
     data: DataFrame, 
     max_threshold: float, 
     target: str = "returning_user",
-    min_features_to_keep: int = 10  # Minimum number of features to retain
+    min_features_to_keep: int = 10,  # Minimum number of features to retain
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude
 ) -> list:
-    summary5: DataFrame = data.describe()
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = data.drop(columns=exclude, errors='ignore')
+    
+    summary5: DataFrame = data_filtered.describe()
 
     # Calculate variance (standard deviation squared)
     variances = summary5.loc["std"] ** 2
@@ -500,11 +504,11 @@ def select_low_variance_variables(
         vars2drop = vars2drop.drop(target)
 
     # Safeguard: Ensure a minimum number of features are retained
-    remaining_features = data.drop(vars2drop, axis=1).shape[1]
+    remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
     if remaining_features < min_features_to_keep:
         print(f"Threshold too strict, keeping at least {min_features_to_keep} features.")
         vars2drop = summary5.columns[variances < max_threshold]
-        remaining_features = data.drop(vars2drop, axis=1).shape[1]
+        remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
 
         # If still too few features, skip dropping
         if remaining_features < min_features_to_keep:
@@ -514,6 +518,7 @@ def select_low_variance_variables(
     print(f"Variance threshold: {max_threshold}, Remaining features: {remaining_features}")
     print(f"Variables to drop: {list(vars2drop)}")
 
+    # Return the columns to drop, while preserving the excluded ones
     return list(vars2drop.values)
 
 
@@ -608,20 +613,29 @@ def study_variance_for_feature_selection(
 
 
 def select_redundant_variables(
-    data: DataFrame, min_threshold: float = 0.90, target: str = "class"
+    data: DataFrame, 
+    min_threshold: float = 0.90, 
+    target: str = "class", 
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from redundancy check
 ) -> list:
-    df: DataFrame = data.drop(target, axis=1, inplace=False)
-    corr_matrix: DataFrame = abs(df.corr())
+    # Exclude the columns that should not be considered (like 'day_of_month')
+    data_filtered = data.drop(columns=[target] + exclude, errors='ignore')
+
+    # Calculate the correlation matrix
+    corr_matrix: DataFrame = abs(data_filtered.corr())
     variables: Index[str] = corr_matrix.columns
     vars2drop: list = []
+
+    # Iterate over the variables and check correlations
     for v1 in variables:
         vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= min_threshold]
-        vars_corr.drop(v1, inplace=True)
-        if len(vars_corr) > 1:
+        vars_corr.drop(v1, inplace=True)  # Remove self-correlation
+        if len(vars_corr) > 1:  # Check if more than one correlated variable
             lst_corr = list(vars_corr.index)
             for v2 in lst_corr:
                 if v2 not in vars2drop:
                     vars2drop.append(v2)
+
     return vars2drop
 
 
@@ -729,6 +743,7 @@ def apply_feature_selection(
 
 DELTA_IMPROVE: float = 0.001
 
+from sklearn.metrics import fbeta_score
 
 CLASS_EVAL_METRICS: dict[str, Callable] = {
     "accuracy": accuracy_score,
@@ -736,6 +751,7 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
     "precision": precision_score,
     "auc": roc_auc_score,
     "f1": f1_score,
+    "f2": lambda y_true, y_pred: fbeta_score(y_true, y_pred, beta=2),  # Adding F2 score   
 }
 
 
@@ -799,20 +815,80 @@ def evaluate_approach(
             eval[met] = [eval_NB[met], eval_KNN[met]]
     return eval
 
+# original function
+# def read_train_test_from_files(
+#     train_fn: str, test_fn: str, target: str = "class"
+# ) -> tuple[ndarray, ndarray, array, array, list, list]:
+#     train: DataFrame = read_csv(train_fn, index_col=None)
+#     labels: list = list(train[target].unique())
+#     labels.sort()
+#     trnY: array = train.pop(target).to_list()
+#     trnX: ndarray = train.values
 
+#     test: DataFrame = read_csv(test_fn, index_col=None)
+#     tstY: array = test.pop(target).to_list()
+#     tstX: ndarray = test.values
+#     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+
+from typing import Union
+import pandas as pd
+from pandas import DataFrame
+from numpy import array, ndarray
+
+# adapted to read from memory
 def read_train_test_from_files(
-    train_fn: str, test_fn: str, target: str = "class"
+    train_fn: Union[str, DataFrame], test_fn: Union[str, DataFrame], target: str = "class"
 ) -> tuple[ndarray, ndarray, array, array, list, list]:
-    train: DataFrame = read_csv(train_fn, index_col=None)
+    """
+    Reads training and test data from either CSV files or DataFrames, and splits
+    the data into features and target.
+
+    Parameters:
+    -----------
+    train_fn : Union[str, DataFrame]
+        File path to the training CSV or a DataFrame object.
+    test_fn : Union[str, DataFrame]
+        File path to the test CSV or a DataFrame object.
+    target : str, default="class"
+        The name of the target column.
+
+    Returns:
+    --------
+    tuple : (trnX, tstX, trnY, tstY, labels, features)
+        - trnX: Training feature set as ndarray.
+        - tstX: Test feature set as ndarray.
+        - trnY: Training labels as array.
+        - tstY: Test labels as array.
+        - labels: List of unique target values.
+        - features: List of feature names (column names).
+    """
+    # Check if train_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(train_fn, str):
+        train: DataFrame = pd.read_csv(train_fn, index_col=None)
+    else:
+        train: DataFrame = train_fn.copy()  # Use the provided DataFrame directly
+
+    # Extract and sort unique target labels
     labels: list = list(train[target].unique())
     labels.sort()
+
+    # Separate features (X) and target (Y) for training data
     trnY: array = train.pop(target).to_list()
     trnX: ndarray = train.values
 
-    test: DataFrame = read_csv(test_fn, index_col=None)
+    # Check if test_fn is a string (file path) or DataFrame, and handle accordingly
+    if isinstance(test_fn, str):
+        test: DataFrame = pd.read_csv(test_fn, index_col=None)
+    else:
+        test: DataFrame = test_fn.copy()  # Use the provided DataFrame directly
+
+    # Separate features (X) and target (Y) for test data
     tstY: array = test.pop(target).to_list()
     tstX: ndarray = test.values
+
     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
+
+
 
 
 def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
@@ -1027,4 +1103,3 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     return axs
 
-print("dslabs lodaded")
