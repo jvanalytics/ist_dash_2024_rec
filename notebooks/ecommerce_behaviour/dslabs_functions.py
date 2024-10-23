@@ -997,7 +997,7 @@ def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: st
     return ax
 
 
-def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray) -> ndarray:
+def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray, file_tag ='') -> ndarray:
     evaluation: dict = {}
     for key in CLASS_EVAL_METRICS:
         evaluation[key] = [
@@ -1009,11 +1009,17 @@ def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarr
     fig: Figure
     axs: ndarray
     fig, axs = subplots(1, 2, figsize=(2 * HEIGHT, HEIGHT))
-    fig.suptitle(f'Best {model["metric"]} for {model["name"]} {params_st}')
+    
+    # Título do gráfico com o filetag
+    fig.suptitle(f'{file_tag} - Best {model["metric"]} for {model["name"]} {params_st}')
+    
+    # Gráfico de barras para métricas de treino e teste
     plot_multibar_chart(["Train", "Test"], evaluation, ax=axs[0], percentage=True)
 
+    # Matriz de confusão para o teste
     cnf_mtx_tst: ndarray = confusion_matrix(tst_y, prd_tst, labels=labels)
     plot_confusion_matrix(cnf_mtx_tst, labels, ax=axs[1])
+    
     return axs
 
 
