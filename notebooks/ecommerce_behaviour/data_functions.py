@@ -252,7 +252,7 @@ from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, plot_bar_chart
 
 
 def naive_Bayes_study(
-    trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, metric: str = "accuracy"
+    trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, metric: str = "accuracy", file_tag=''
 ) -> tuple:
     estimators: dict = {
         "GaussianNB": GaussianNB(),
@@ -280,7 +280,7 @@ def naive_Bayes_study(
     plot_bar_chart(
         xvalues,
         yvalues,
-        title=f"Naive Bayes Models ({metric})",
+        title=f"{file_tag} - Naive Bayes Models ({metric})",
         ylabel=metric,
         percentage=True,
     )
@@ -452,7 +452,7 @@ from dslabs_functions import CLASS_EVAL_METRICS, DELTA_IMPROVE, plot_multiline_c
 from dslabs_functions import read_train_test_from_files, plot_evaluation_results
 
 def knn_study(
-        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, k_max: int=19, lag: int=2, metric='accuracy'
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, k_max: int=19, lag: int=2, metric='accuracy', file_tag=''
         ) -> tuple[KNeighborsClassifier | None, dict]:
     dist: list[Literal['manhattan', 'euclidean', 'chebyshev']] = ['manhattan', 'euclidean', 'chebyshev']
 
@@ -477,7 +477,7 @@ def knn_study(
             # print(f'KNN {d} k={k}')
         values[d] = y_tst_values
     print(f'KNN best with k={best_params['params'][0]} and {best_params['params'][1]}')
-    plot_multiline_chart(kvalues, values, title=f'KNN Models ({metric})', xlabel='k', ylabel=metric, percentage=True)
+    plot_multiline_chart(kvalues, values, title=f'{file_tag} - KNN Models ({metric})', xlabel='k', ylabel=metric, percentage=True)
 
     return best_model, best_params
 
@@ -634,7 +634,7 @@ from dslabs_functions import plot_evaluation_results, plot_multiline_chart
 
 
 def trees_study(
-        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, d_max: int=10, lag:int=2, metric='accuracy'
+        trnX: ndarray, trnY: array, tstX: ndarray, tstY: array, d_max: int=10, lag:int=2, metric='accuracy', file_tag=''
         ) -> tuple:
     criteria: list[Literal['entropy', 'gini']] = ['entropy', 'gini']
     depths: list[int] = [i for i in range(2, d_max+1, lag)]
@@ -659,7 +659,7 @@ def trees_study(
             # print(f'DT {c} and d={d}')
         values[c] = y_tst_values
     print(f'DT best with {best_params['params'][0]} and d={best_params['params'][1]}')
-    plot_multiline_chart(depths, values, title=f'DT Models ({metric})', xlabel='d', ylabel=metric, percentage=True)
+    plot_multiline_chart(depths, values, title=f'{file_tag} - DT Models ({metric})', xlabel='d', ylabel=metric, percentage=True)
 
     return best_model, best_params
 
@@ -683,6 +683,7 @@ def mlp_study(
     nr_max_iterations: int = 2500,
     lag: int = 500,
     metric: str = "accuracy",
+    file_tag='',
 ) -> tuple[MLPClassifier | None, dict]:
     nr_iterations: list[int] = [lag] + [
         i for i in range(2 * lag, nr_max_iterations + 1, lag)
@@ -734,7 +735,7 @@ def mlp_study(
             nr_iterations,
             values,
             ax=axs[0, i],
-            title=f"MLP with {type}",
+            title=f"{file_tag} - MLP with {type}",
             xlabel="nr iterations",
             ylabel=metric,
             percentage=True,
@@ -766,6 +767,7 @@ def random_forests_study(
     nr_max_trees: int = 2500,
     lag: int = 500,
     metric: str = "accuracy",
+    file_tag='',
 ) -> tuple[RandomForestClassifier | None, dict]:
     n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
     max_depths: list[int] = [2, 5, 7]
@@ -802,7 +804,7 @@ def random_forests_study(
             n_estimators,
             values,
             ax=axs[0, i],
-            title=f"Random Forests with max_depth={d}",
+            title=f"{file_tag} - Random Forests with max_depth={d}",
             xlabel="nr estimators",
             ylabel=metric,
             percentage=True,
@@ -832,6 +834,7 @@ def gradient_boosting_study(
     nr_max_trees: int = 2500,
     lag: int = 500,
     metric: str = "accuracy",
+    file_tag='',
 ) -> tuple[GradientBoostingClassifier | None, dict]:
     n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
     max_depths: list[int] = [2, 5, 7]
@@ -867,7 +870,7 @@ def gradient_boosting_study(
             n_estimators,
             values,
             ax=axs[0, i],
-            title=f"Gradient Boosting with max_depth={d}",
+            title=f"{file_tag} - Gradient Boosting with max_depth={d}",
             xlabel="nr estimators",
             ylabel=metric,
             percentage=True,
