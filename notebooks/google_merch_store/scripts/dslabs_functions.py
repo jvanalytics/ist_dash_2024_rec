@@ -910,14 +910,14 @@ def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes 
     return ax
 
 
-def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class") -> Axes:  # type: ignore
+def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class", file_tag='') -> Axes:  # type: ignore
     if ax is None:
         ax = gca()
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
     ax.set_xlabel("FP rate")
     ax.set_ylabel("TP rate")
-    ax.set_title("ROC chart for %s" % target)
+    ax.set_title(f"{file_tag} ROC chart for %s" % target)
 
     ax.plot(
         [0, 1],
@@ -942,7 +942,7 @@ def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: st
     return ax
 
 
-def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray) -> ndarray:
+def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray, file_tag='') -> ndarray:
     evaluation: dict = {}
     for key in CLASS_EVAL_METRICS:
         evaluation[key] = [
@@ -954,7 +954,7 @@ def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarr
     fig: Figure
     axs: ndarray
     fig, axs = subplots(1, 2, figsize=(2 * HEIGHT, HEIGHT))
-    fig.suptitle(f'Best {model["metric"]} for {model["name"]} {params_st}')
+    fig.suptitle(f'{file_tag} Best {model["metric"]} for {model["name"]} {params_st}')
     plot_multibar_chart(["Train", "Test"], evaluation, ax=axs[0], percentage=True)
 
     cnf_mtx_tst: ndarray = confusion_matrix(tst_y, prd_tst, labels=labels)
