@@ -509,6 +509,18 @@ def apply_missing_values_remove_cols_and_any_na_rows(df,cols):
     return df_copy
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 import numpy as np
 import pandas as pd
 from typing import Tuple, List, Dict

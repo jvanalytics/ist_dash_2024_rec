@@ -563,7 +563,8 @@ def study_variance_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
-    min_features_to_keep: int = 5  # Minimum features safeguard
+    min_features_to_keep: int = 5,  # Minimum features safeguard
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
     # Generate the range of variance thresholds to test
     options: list[float] = [
@@ -580,9 +581,9 @@ def study_variance_for_feature_selection(
         variances = summary5.loc["std"] ** 2
         vars2drop: Index[str] = summary5.columns[variances < thresh]
 
-        # Ensure we don't drop the target column
-        if target in vars2drop:
-            vars2drop = vars2drop.drop(target)
+        # Ensure we don't drop the target or excluded columns
+        drop_cols = [target] + exclude
+        vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
 
         # Safeguard: Ensure we don't drop too many features
         remaining_features = train.drop(vars2drop, axis=1).shape[1]
@@ -590,6 +591,7 @@ def study_variance_for_feature_selection(
             print(f"Threshold too strict at {thresh}, adjusting to retain at least {min_features_to_keep} features.")
             # Adjust threshold dynamically
             vars2drop = summary5.columns[variances < thresh / 2]
+            vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
             remaining_features = train.drop(vars2drop, axis=1).shape[1]
             if remaining_features < min_features_to_keep:
                 print(f"Still too strict, keeping all variables for this threshold.")
@@ -601,7 +603,6 @@ def study_variance_for_feature_selection(
         # Drop the low variance variables from train and test sets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-
 
         # Evaluate the approach using the current feature set
         eval: dict[str, list] | None = evaluate_approach(
@@ -623,9 +624,6 @@ def study_variance_for_feature_selection(
             print(f"Evaluation failed or returned empty at threshold {thresh}.")
             results["NB"].append(None)
             results["KNN"].append(None)
-            
-
-
 
     # Plotting the results of the variance study
     plot_multiline_chart(
@@ -644,10 +642,10 @@ def select_redundant_variables(
     data: DataFrame, 
     min_threshold: float = 0.90, 
     target: str = "class", 
-    exclude: list[str] = ["day"]  # Columns to exclude from redundancy check
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from redundancy check
 ) -> list:
     # Exclude the columns that should not be considered (like 'day_of_month')
-    data_filtered = df.drop(columns=[target] + exclude, errors='ignore')
+    data_filtered = data.drop(columns=[target] + exclude, errors='ignore')
 
     # Calculate the correlation matrix
     corr_matrix: DataFrame = abs(data_filtered.corr())
@@ -666,6 +664,7 @@ def select_redundant_variables(
 
     return vars2drop
 
+
 def study_redundancy_for_feature_selection(
     train: DataFrame,
     test: DataFrame,
@@ -674,6 +673,7 @@ def study_redundancy_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
     # Generate the range of redundancy thresholds to test
     options: list[float] = [
@@ -681,8 +681,9 @@ def study_redundancy_for_feature_selection(
         for i in range(ceil((1 - min_threshold) / lag) + 1)
     ]
 
-    # Ensure 'target' column is present and drop it for correlation calculation
-    df: DataFrame = train.drop(target, axis=1, inplace=False)
+    # Ensure 'target' and 'exclude' columns are present and drop them for correlation calculation
+    drop_cols = [target] + exclude
+    df: DataFrame = train.drop(drop_cols, axis=1, inplace=False)
     print(f"Columns in the train dataset: {df.columns.tolist()}")  # Debugging step
 
     # Calculate the correlation matrix
@@ -712,6 +713,9 @@ def study_redundancy_for_feature_selection(
                         vars2drop.append(v2)
 
         print(f"Variables to drop at threshold {thresh}: {vars2drop}")  # Debugging step
+        
+        # Ensure that none of the columns in 'exclude' are dropped
+        vars2drop = [v for v in vars2drop if v not in exclude]
         
         # Drop the selected redundant variables from train and test datasets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
@@ -747,8 +751,6 @@ def study_redundancy_for_feature_selection(
     )
     savefig(f"images/{file_tag}_fs_redundancy_{metric}_study.png")
     return results
-
-
 
 def apply_feature_selection(
     train: DataFrame,
