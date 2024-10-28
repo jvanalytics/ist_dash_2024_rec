@@ -741,7 +741,7 @@ def mlp_study(
                     best_performance = eval
                     best_params["params"] = (type, lr, nr_iterations[j])
                     best_model = clf
-                # print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
+                print(f'MLP lr_type={type} lr={lr} n={nr_iterations[j]}')
             values[lr] = y_tst_values
         plot_multiline_chart(
             nr_iterations,
