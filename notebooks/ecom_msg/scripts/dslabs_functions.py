@@ -533,7 +533,8 @@ def study_variance_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
-    min_features_to_keep: int = 5  # Minimum features safeguard
+    min_features_to_keep: int = 5,  # Minimum features safeguard
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
     # Generate the range of variance thresholds to test
     options: list[float] = [
@@ -550,9 +551,9 @@ def study_variance_for_feature_selection(
         variances = summary5.loc["std"] ** 2
         vars2drop: Index[str] = summary5.columns[variances < thresh]
 
-        # Ensure we don't drop the target column
-        if target in vars2drop:
-            vars2drop = vars2drop.drop(target)
+        # Ensure we don't drop the target or excluded columns
+        drop_cols = [target] + exclude
+        vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
 
         # Safeguard: Ensure we don't drop too many features
         remaining_features = train.drop(vars2drop, axis=1).shape[1]
@@ -560,6 +561,7 @@ def study_variance_for_feature_selection(
             print(f"Threshold too strict at {thresh}, adjusting to retain at least {min_features_to_keep} features.")
             # Adjust threshold dynamically
             vars2drop = summary5.columns[variances < thresh / 2]
+            vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
             remaining_features = train.drop(vars2drop, axis=1).shape[1]
             if remaining_features < min_features_to_keep:
                 print(f"Still too strict, keeping all variables for this threshold.")
@@ -571,7 +573,6 @@ def study_variance_for_feature_selection(
         # Drop the low variance variables from train and test sets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-
 
         # Evaluate the approach using the current feature set
         eval: dict[str, list] | None = evaluate_approach(
@@ -593,9 +594,6 @@ def study_variance_for_feature_selection(
             print(f"Evaluation failed or returned empty at threshold {thresh}.")
             results["NB"].append(None)
             results["KNN"].append(None)
-            
-
-
 
     # Plotting the results of the variance study
     plot_multiline_chart(
@@ -608,8 +606,6 @@ def study_variance_for_feature_selection(
     )
     savefig(f"images/{file_tag}_fs_low_var_{metric}_study.png")
     return results
-
-
 
 
 def select_redundant_variables(
@@ -647,6 +643,7 @@ def study_redundancy_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
+    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
     # Generate the range of redundancy thresholds to test
     options: list[float] = [
@@ -654,8 +651,9 @@ def study_redundancy_for_feature_selection(
         for i in range(ceil((1 - min_threshold) / lag) + 1)
     ]
 
-    # Ensure 'target' column is present and drop it for correlation calculation
-    df: DataFrame = train.drop(target, axis=1, inplace=False)
+    # Ensure 'target' and 'exclude' columns are present and drop them for correlation calculation
+    drop_cols = [target] + exclude
+    df: DataFrame = train.drop(drop_cols, axis=1, inplace=False)
     print(f"Columns in the train dataset: {df.columns.tolist()}")  # Debugging step
 
     # Calculate the correlation matrix
@@ -685,6 +683,9 @@ def study_redundancy_for_feature_selection(
                         vars2drop.append(v2)
 
         print(f"Variables to drop at threshold {thresh}: {vars2drop}")  # Debugging step
+        
+        # Ensure that none of the columns in 'exclude' are dropped
+        vars2drop = [v for v in vars2drop if v not in exclude]
         
         # Drop the selected redundant variables from train and test datasets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
@@ -911,14 +912,14 @@ def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes 
     return ax
 
 
-def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class") -> Axes:  # type: ignore
+def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class", file_tag='') -> Axes:  # type: ignore
     if ax is None:
         ax = gca()
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
     ax.set_xlabel("FP rate")
     ax.set_ylabel("TP rate")
-    ax.set_title("ROC chart for %s" % target)
+    ax.set_title(f"{file_tag} ROC chart for %s" % target)
 
     ax.plot(
         [0, 1],
@@ -943,7 +944,7 @@ def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: st
     return ax
 
 
-def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray) -> ndarray:
+def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray, file_tag='') -> ndarray:
     evaluation: dict = {}
     for key in CLASS_EVAL_METRICS:
         evaluation[key] = [
@@ -955,7 +956,7 @@ def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarr
     fig: Figure
     axs: ndarray
     fig, axs = subplots(1, 2, figsize=(2 * HEIGHT, HEIGHT))
-    fig.suptitle(f'Best {model["metric"]} for {model["name"]} {params_st}')
+    fig.suptitle(f'{file_tag} Best {model["metric"]} for {model["name"]} {params_st}')
     plot_multibar_chart(["Train", "Test"], evaluation, ax=axs[0], percentage=True)
 
     cnf_mtx_tst: ndarray = confusion_matrix(tst_y, prd_tst, labels=labels)
