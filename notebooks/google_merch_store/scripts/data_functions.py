@@ -688,6 +688,8 @@ def mlp_study(
     nr_max_iterations: int = 2500,
     lag: int = 500,
     metric: str = "accuracy",
+    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005],
+    
     file_tag=''    
 ) -> tuple[MLPClassifier | None, dict]:
     nr_iterations: list[int] = [lag] + [
@@ -699,7 +701,7 @@ def mlp_study(
         "invscaling",
         "adaptive",
     ]  # only used if optimizer='sgd'
-    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
+    # learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
 
     best_model: MLPClassifier | None = None
     best_params: dict = {"name": "MLP", "metric": metric, "params": ()}
