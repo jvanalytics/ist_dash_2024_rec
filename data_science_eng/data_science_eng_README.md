@@ -1,6 +1,4 @@
-# ist_dash_2024_rec
-
-Repo for group project in Data Science Engineering.
+# Repo for group project in Data Science Engineering.
 
 Desired Characterics of Datasets:
 
