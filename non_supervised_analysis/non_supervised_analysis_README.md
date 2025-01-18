@@ -18,3 +18,8 @@
 
 - https://www.kaggle.com/datasets/ddosad/auto-sales-data
 - https://www.kaggle.com/datasets/gabrielsantello/cars-purchase-decision-dataset
+- https://www.kaggle.com/datasets/vjchoudhary7/customer-segmentation-tutorial-in-python
+- https://www.kaggle.com/datasets/shivamb/bank-customer-segmentation/data
+- https://www.kaggle.com/datasets/prasad22/retail-transactions-dataset
+- https://www.kaggle.com/datasets/hosubjeong/bakery-sales
+- https://www.kaggle.com/datasets/matinmahmoudi/sales-and-satisfaction
