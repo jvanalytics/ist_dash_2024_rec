@@ -27,7 +27,9 @@
 - usou-se dataset 'virus' em vez de 'iris'
 - referencia a metodos de pre processamento (MVs, outliers, scaling, balancing, discretizaçao, enconding)
 
-## clustering
+## clustering part 1
+https://e.tecnicomais.pt/pluginfile.php/350464/mod_resource/content/4/03a%20Clustering%20Part1.pdf
+
 ![alt text](aula_1_clustering.jpg)
 
 1. Descriçao com explicabilidade dos preditores, clustering
@@ -39,4 +41,30 @@
 
 
 # aula 2
+
+## clustering part 2
+https://e.tecnicomais.pt/pluginfile.php/350467/mod_resource/content/3/03b%20Clustering%20Part2.pdf
+
+![alt text](aula_2_clustering.jpg)
+
+- observaçao de dados em matriz, exploraçao, amostragem e eficiencia. Referencia a distancia das observaçoes (ex: knn)
+
+
+### Clustering features:
+#### 1. distance
+ ![alt text](aula_2_clustering_distance.jpg)
+- numeric, nominal, ordinal, non iid (multivariate, time series, image, geo, events)
+    - nominal usa a distancia Hamming
+![alt text](aula_2_clustering_distance_hamming.jpg)
+    - distancia euclidiana, manhattan, chebyshev, coseno
+        - tbm se pode calcular correlaçao pearson, spearman
+    - escolha de semelhança vs distancia depende do conhecimento de dominio
+
+### 2. approach (abordagens)
+![alt text](aula_2_clustering_approach.jpg)
+![alt text](aula_2_clustering_categorical.jpg)
+- partitioning, hierarchical, density-based, model-based
+    - atençao a questao de dummyfication. é so para itens com cardinalidade maior que 2 sem ordem.
+    - hierarquicos existem algoritmos aglomerativos e divisivos
+![alt text](aula_2_clustering_hierarchical.jpg)
 
