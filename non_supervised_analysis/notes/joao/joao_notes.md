@@ -36,3 +36,7 @@
     - simples vs hierarquicas
     - exclusivas vs nao exclusivas
     - suaves vs estritas (hard)
+
+
+# aula 2
+
