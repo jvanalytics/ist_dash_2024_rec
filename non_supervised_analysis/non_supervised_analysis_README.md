@@ -13,9 +13,9 @@
    - https://www.kaggle.com/datasets/hosubjeong/bakery-sales 
 
 3. [João]Dataset 3 Instacart Market Basket Analysis
-- https://www.kaggle.com/competitions/instacart-market-basket-analysis/overview 
-   - https://www.kaggle.com/code/datatheque/association-rules-mining-market-basket-analysis/notebook
-   - https://www.kaggle.com/code/asindico/customer-segments-with-pca
+   - https://www.kaggle.com/competitions/instacart-market-basket-analysis/overview 
+      - https://www.kaggle.com/code/datatheque/association-rules-mining-market-basket-analysis/notebook
+      - https://www.kaggle.com/code/asindico/customer-segments-with-pca
 
 
 ## Possible Datasets

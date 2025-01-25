@@ -151,3 +151,211 @@ kmeans = KMeans(n_clusters=2, random_state=0).fit(X)
 sse = kmeans.inertia_
 print(f'Sum of Squared Errors (SSE): {sse}')
 ```
+
+
+
+# Aula 3 25/01/2024
+
+## Clustering part 3
+![alt text](aula_3_clustering.jpg)
+
+### Clustering Evaluation Methods
+
+Evaluating clustering results is crucial to ensure the quality and effectiveness of the clustering algorithm. Here are some common methods used for clustering evaluation:
+
+#### 1. Silhouette Score
+The Silhouette Score measures how similar an object is to its own cluster compared to other clusters. It ranges from -1 to 1, where a higher value indicates better-defined clusters.
+```python
+from sklearn.metrics import silhouette_score
+sil_score = silhouette_score(X, kmeans.labels_)
+```
+
+#### 2. Sum of Squared Errors (SSE)
+SSE measures the total squared distance between each data point and the centroid of its assigned cluster. Lower SSE values indicate more compact clusters.
+```python
+sse = kmeans.inertia_
+```
+
+#### 3. Davies-Bouldin Index
+The Davies-Bouldin Index evaluates the average similarity ratio of each cluster with its most similar cluster. Lower values indicate better clustering.
+```python
+from sklearn.metrics import davies_bouldin_score
+db_index = davies_bouldin_score(X, kmeans.labels_)
+```
+
+#### 4. Dunn Index
+The Dunn Index is the ratio of the minimum inter-cluster distance to the maximum intra-cluster distance. Higher values indicate better clustering.
+
+#### 5. Adjusted Rand Index (ARI)
+ARI measures the similarity between the true labels and the clustering labels, adjusted for chance. It ranges from -1 to 1, with higher values indicating better clustering.
+```python
+from sklearn.metrics import adjusted_rand_score
+ari = adjusted_rand_score(true_labels, kmeans.labels_)
+```
+
+These methods help in assessing the performance of clustering algorithms and ensuring the formation of meaningful and well-separated clusters.
+
+## Outlier Analysis
+![alt text](aula_3_outliers.jpg)
+
+
+Outlier analysis is the process of identifying and analyzing data points that deviate significantly from the rest of the dataset. Outliers can occur due to variability in the data, measurement errors, or experimental errors. Detecting and handling outliers is crucial as they can significantly affect the results of data analysis and machine learning models.
+
+### Types of Outliers/Anomalies
+
+Outliers or anomalies can be categorized based on their characteristics and the context in which they occur. Here are some common types:
+
+#### Global Outliers (Point Anomalies)
+Global outliers, also known as point anomalies, are individual data points that deviate significantly from the rest of the dataset. These outliers are unusual with respect to the entire dataset.
+- **Example**: A temperature reading of 100°C in a dataset of daily temperatures ranging between 20°C and 30°C.
+
+#### Contextual Outliers (Conditional Anomalies)
+Contextual outliers, also known as conditional anomalies, are data points that are considered normal in one context but anomalous in another. The context can be defined by time, space, or other attributes.
+- **Example**: A temperature of 30°C might be normal in summer but anomalous in winter.
+
+#### Collective Outliers
+Collective outliers are a group of data points that are anomalous when considered together but not necessarily when considered individually. These outliers often indicate a pattern or a sequence that deviates from the norm.
+- **Example**: A sudden spike in network traffic over a short period, which might indicate a potential security breach.
+
+Understanding the type of outliers is crucial for selecting appropriate detection methods and handling strategies. Each type of outlier requires different techniques for identification and analysis to ensure accurate and reliable results in data analysis and machine learning models.
+
+
+
+### univariate vs Multivariate Outliers
+
+#### Univariate Outliers
+Univariate outliers are data points that are unusual with respect to a single variable. Common methods to detect univariate outliers include:
+
+- **Z-Score**: Measures how many standard deviations a data point is from the mean. Data points with a Z-score greater than a threshold (e.g., 3 or -3) are considered outliers.
+    ```python
+    from scipy.stats import zscore
+    import numpy as np
+
+    data = np.array([10, 12, 12, 13, 12, 11, 14, 13, 100])
+    z_scores = zscore(data)
+    outliers = np.where(np.abs(z_scores) > 3)
+    print(f'Univariate Outliers: {data[outliers]}')
+    ```
+
+- **IQR (Interquartile Range)**: Measures the spread of the middle 50% of the data. Data points outside 1.5 times the IQR above the third quartile or below the first quartile are considered outliers.
+    ```python
+    Q1 = np.percentile(data, 25)
+    Q3 = np.percentile(data, 75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers = data[(data < lower_bound) | (data > upper_bound)]
+    print(f'Univariate Outliers: {outliers}')
+    ```
+
+#### Multivariate Outliers
+Multivariate outliers are data points that are unusual with respect to multiple variables. Common methods to detect multivariate outliers include:
+
+- **Mahalanobis Distance**: Measures the distance of a data point from the mean of a multivariate distribution, taking into account the correlations between variables.
+    ```python
+    import numpy as np
+    from scipy.spatial.distance import mahalanobis
+
+    data = np.array([[10, 12], [12, 13], [12, 11], [14, 13], [100, 200]])
+    mean = np.mean(data, axis=0)
+    cov_matrix = np.cov(data, rowvar=False)
+    inv_cov_matrix = np.linalg.inv(cov_matrix)
+    distances = [mahalanobis(x, mean, inv_cov_matrix) for x in data]
+    threshold = np.percentile(distances, 97.5)
+    outliers = data[np.array(distances) > threshold]
+    print(f'Multivariate Outliers: {outliers}')
+    ```
+
+- **Isolation Forest**: An unsupervised learning algorithm that isolates observations by randomly selecting a feature and then randomly selecting a split value between the maximum and minimum values of the selected feature.
+    ```python
+    from sklearn.ensemble import IsolationForest
+
+    data = np.array([[10, 12], [12, 13], [12, 11], [14, 13], [100, 200]])
+    iso_forest = IsolationForest(contamination=0.1)
+    outliers = iso_forest.fit_predict(data)
+    print(f'Multivariate Outliers: {data[outliers == -1]}')
+    ```
+
+Detecting and handling outliers is essential to ensure the accuracy and reliability of data analysis and machine learning models. Depending on the context, outliers can be removed, transformed, or analyzed further to understand their impact on the data.
+
+
+![alt text](aula_3_outliers_paradigmas.jpg)
+
+## Unsupervised Learning Paradigms
+
+Unsupervised learning involves training a model on data without labeled responses. The goal is to uncover hidden patterns or intrinsic structures in the data. Here are some key paradigms in unsupervised learning:
+
+### Model-Based Paradigms
+Model-based paradigms assume that the data is generated by a mixture of underlying probability distributions. These models estimate the parameters of these distributions and assign data points to clusters based on the likelihood of belonging to each distribution. A common example is the Gaussian Mixture Model (GMM).
+
+### Density-Based Paradigms
+Density-based paradigms identify clusters in data by looking for regions of high density separated by regions of low density. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) is a popular algorithm that groups closely packed points and marks points in low-density regions as outliers.
+
+### Distance-Based Paradigms
+Distance-based paradigms rely on the distance between data points to form clusters. These methods use various distance metrics such as Euclidean, Manhattan, and Hamming distances. K-means is a well-known distance-based clustering algorithm that partitions data into clusters by minimizing the within-cluster variance.
+
+### Clustering Paradigms
+Clustering paradigms aim to partition the data into distinct groups or clusters. Each data point belongs to one cluster, and the goal is to ensure that points within a cluster are more similar to each other than to points in other clusters. Clustering can be further categorized into:
+
+- **Partitioning Clustering**: Divides data into distinct clusters, e.g., K-means.
+- **Hierarchical Clustering**: Builds a hierarchy of clusters using agglomerative or divisive approaches.
+- **Density-Based Clustering**: Identifies clusters based on data density, e.g., DBSCAN.
+- **Model-Based Clustering**: Uses statistical models to represent clusters, e.g., GMM.
+
+These paradigms provide various approaches to uncovering the underlying structure of data, each with its strengths and suitable applications.
+
+
+## Metodos clustering / analise
+![alt text](aula_3_analise_metodos.jpg)
+
+## Unsupervised Analysis Methods
+
+
+
+### Dimensionality Reduction
+Dimensionality reduction techniques reduce the number of features in a dataset while preserving its essential structure. This helps in visualizing high-dimensional data and improving the performance of machine learning algorithms. Common dimensionality reduction methods include:
+- **Principal Component Analysis (PCA)**: Transforms data into a lower-dimensional space by identifying the principal components that capture the most variance.
+- **t-Distributed Stochastic Neighbor Embedding (t-SNE)**: Reduces dimensionality while preserving the local structure of the data, often used for visualization.
+- **Linear Discriminant Analysis (LDA)**: Projects data onto a lower-dimensional space to maximize class separability, primarily used for supervised learning.
+
+### Association Rule Learning
+Association rule learning identifies interesting relationships or associations between variables in large datasets. It is commonly used in market basket analysis to find patterns in customer purchase behavior. Popular algorithms include:
+- **Apriori**: Generates frequent itemsets and association rules by iteratively identifying itemsets that meet a minimum support threshold.
+- **Eclat**: Uses a depth-first search strategy to find frequent itemsets, often more efficient than Apriori for large datasets.
+
+## Principal Component Analysis (PCA)
+
+Principal Component Analysis (PCA) is a widely used dimensionality reduction technique that transforms data into a lower-dimensional space while preserving as much variance as possible. PCA achieves this by identifying the principal components, which are orthogonal directions in the data that capture the most variance.
+
+### Steps in PCA
+1. **Standardize the Data**: Ensure that each feature has a mean of zero and a standard deviation of one.
+2. **Compute the Covariance Matrix**: Calculate the covariance matrix to understand the relationships between features.
+3. **Calculate Eigenvalues and Eigenvectors**: Determine the eigenvalues and eigenvectors of the covariance matrix. The eigenvectors represent the principal components, and the eigenvalues indicate the amount of variance captured by each component.
+4. **Sort and Select Principal Components**: Sort the eigenvalues in descending order and select the top k eigenvectors corresponding to the largest eigenvalues.
+5. **Transform the Data**: Project the original data onto the selected principal components to obtain the lower-dimensional representation.
+
+### Benefits of PCA
+- **Dimensionality Reduction**: Reduces the number of features, making data easier to visualize and analyze.
+- **Noise Reduction**: Removes noise and redundant features, improving the performance of machine learning models.
+- **Feature Extraction**: Identifies the most important features that capture the underlying structure of the data.
+
+### Example of PCA in Python
+```python
+from sklearn.decomposition import PCA
+import numpy as np
+
+# Sample data
+X = np.array([[2.5, 2.4], [0.5, 0.7], [2.2, 2.9], [1.9, 2.2], [3.1, 3.0], [2.3, 2.7], [2, 1.6], [1, 1.1], [1.5, 1.6], [1.1, 0.9]])
+
+# Standardize the data
+X_standardized = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+
+# Apply PCA
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_standardized)
+
+print("Principal Components:\n", pca.components_)
+print("Explained Variance Ratio:\n", pca.explained_variance_ratio_)
+```
+
+PCA is a powerful tool for simplifying complex datasets, making it easier to identify patterns and relationships in the data.
