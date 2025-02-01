@@ -154,7 +154,7 @@ print(f'Sum of Squared Errors (SSE): {sse}')
 
 
 
-# Aula 3 25/01/2024
+# Aula 3 25/01/2025
 
 ## Clustering part 3
 ![alt text](aula_3_clustering.jpg)
@@ -308,8 +308,7 @@ These paradigms provide various approaches to uncovering the underlying structur
 ## Metodos clustering / analise
 ![alt text](aula_3_analise_metodos.jpg)
 
-## Unsupervised Analysis Methods
-
+## Unsupervised Analysis
 
 
 ### Dimensionality Reduction
@@ -318,12 +317,9 @@ Dimensionality reduction techniques reduce the number of features in a dataset w
 - **t-Distributed Stochastic Neighbor Embedding (t-SNE)**: Reduces dimensionality while preserving the local structure of the data, often used for visualization.
 - **Linear Discriminant Analysis (LDA)**: Projects data onto a lower-dimensional space to maximize class separability, primarily used for supervised learning.
 
-### Association Rule Learning
-Association rule learning identifies interesting relationships or associations between variables in large datasets. It is commonly used in market basket analysis to find patterns in customer purchase behavior. Popular algorithms include:
-- **Apriori**: Generates frequent itemsets and association rules by iteratively identifying itemsets that meet a minimum support threshold.
-- **Eclat**: Uses a depth-first search strategy to find frequent itemsets, often more efficient than Apriori for large datasets.
 
 ## Principal Component Analysis (PCA)
+![alt text](aula_3_analise_pca.jpg)
 
 Principal Component Analysis (PCA) is a widely used dimensionality reduction technique that transforms data into a lower-dimensional space while preserving as much variance as possible. PCA achieves this by identifying the principal components, which are orthogonal directions in the data that capture the most variance.
 
@@ -359,3 +355,328 @@ print("Explained Variance Ratio:\n", pca.explained_variance_ratio_)
 ```
 
 PCA is a powerful tool for simplifying complex datasets, making it easier to identify patterns and relationships in the data.
+
+
+# Aula 4 01/02/2025
+
+## Descoberta de padrões (Pattern Mining)
+![alt text](aula_4_pattern_mining_association.jpg)
+
+https://e.tecnicomais.pt/pluginfile.php/350479/mod_resource/content/3/05a%20PatternMiningIntro.pdf
+
+## Introduction to Pattern Mining and Association Rules
+
+Pattern mining is a crucial aspect of data mining that focuses on discovering interesting patterns, associations, and relationships within large datasets. It involves identifying frequent itemsets, sequences, or substructures that occur together in a dataset. One of the most common applications of pattern mining is in market basket analysis, where the goal is to find associations between items purchased together by customers.
+
+**Association Rules**
+
+Association rules are a popular method in pattern mining used to identify relationships between variables in large datasets. These rules are typically represented in the form of "if-then" statements, where the presence of certain items in a transaction implies the presence of other items. The main components of association rules are:
+
+### **Support** 
+
+The support of an itemset is the proportion of transactions in the dataset that contain the itemset. It measures the frequency of occurrence of the itemset. Example: The percentage of transactions that include both bread and butter.
+
+
+### Confidence vs Lift: Calculations and Interpretation
+![alt text](aula_4_pattern_mining_association_lift.jpg)
+
+#### Confidence
+Confidence measures the reliability of an association rule. It is calculated as the ratio of the number of transactions containing both the antecedent and the consequent to the number of transactions containing the antecedent. 
+The confidence of a rule is the proportion of transactions containing \the antecedent that also contain the consequent. It measures the reliability of the rule. Example: The percentage of transactions that include bread and also include butter.
+
+
+**Formula:**
+\[ \text{Confidence}(A \Rightarrow B) = \frac{\text{Support}(A \cap B)}{\text{Support}(A)} \]
+
+**Example:**
+Consider a dataset with 100 transactions:
+- 20 transactions contain bread.
+- 15 transactions contain both bread and butter.
+
+The confidence of the rule "bread ⇒ butter" is:
+\[ \text{Confidence}(\text{bread} \Rightarrow \text{butter}) = \frac{15}{20} = 0.75 \]
+
+**Interpretation:**
+This means that 75% of the transactions that contain bread also contain butter.
+
+#### Lift
+Lift measures the strength of an association rule by comparing the observed support to the expected support if the antecedent and consequent were independent.
+The lift of a rule is the ratio of the observed support to the expected support if the antecedent and consequent were independent. It measures the strength of the association between the items. A lift value greater than 1 indicates a positive association, meaning the items are more likely to be purchased together than expected by chance. Example: If the lift of the rule "bread ⇒ butter" is 1.5, it means that the likelihood of buying butter when bread is purchased is 1.5 times higher than if the two items were independent.
+
+**Formula:**
+\[ \text{Lift}(A \Rightarrow B) = \frac{\text{Support}(A \cap B)}{\text{Support}(A) \times \text{Support}(B)} \]
+
+**Example:**
+Consider the same dataset with 100 transactions:
+- 20 transactions contain bread.
+- 30 transactions contain butter.
+- 15 transactions contain both bread and butter.
+
+The lift of the rule "bread ⇒ butter" is:
+\[ \text{Lift}(\text{bread} \Rightarrow \text{butter}) = \frac{15/100}{(20/100) \times (30/100)} = \frac{0.15}{0.06} = 2.5 \]
+
+**Interpretation:**
+This means that the likelihood of buying butter when bread is purchased is 2.5 times higher than if the two items were independent.
+
+#### Python Example
+```python
+import pandas as pd
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import association_rules, apriori
+
+# Sample data
+transactions = [
+    ['bread', 'butter'],
+    ['bread'],
+    ['butter'],
+    ['bread', 'butter'],
+    ['bread', 'butter'],
+    ['butter']
+]
+
+# Convert transactions to one-hot encoded DataFrame
+te = TransactionEncoder()
+te_ary = te.fit(transactions).transform(transactions)
+df = pd.DataFrame(te_ary, columns=te.columns_)
+
+# Apply Apriori algorithm
+frequent_itemsets = apriori(df, min_support=0.1, use_colnames=True)
+
+# Generate association rules
+rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.1)
+
+# Display rules with confidence and lift
+print(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
+```
+
+In this example:
+- We define a list of transactions.
+- We use `TransactionEncoder` to convert the transactions into a one-hot encoded DataFrame.
+- We apply the `apriori` function to find frequent itemsets with a minimum support of 0.1.
+- We generate association rules with a minimum confidence threshold of 0.1 and display the rules with their support, confidence, and lift values.
+
+This example helps in understanding how confidence and lift are calculated and interpreted in the context of association rule mining.
+
+### Categories of Association Rules
+
+Association rules can be classified into different categories based on the type of data and the nature of the relationships they capture. Here are the main categories:
+
+##### 1. Boolean Association Rules
+Boolean association rules are used in transactional, sequential, and categorical multivariate data. These rules identify the presence or absence of items in transactions.
+- **Example**: Keyboard ⇒ Mouse [sup=6%, conf=70%]
+    - **Support**: 6% of transactions contain both a keyboard and a mouse.
+    - **Confidence**: 70% of transactions that contain a keyboard also contain a mouse.
+
+##### 2. Quantitative Association Rules
+Quantitative association rules are used in numeric data. These rules identify relationships between numeric attributes and their ranges.
+- **Example**: Age ∈ [26,30] ⇒ Cars ∈ {1,2} [sup=3%, conf=36%]
+    - **Support**: 3% of transactions involve customers aged between 26 and 30 who own 1 or 2 cars.
+    - **Confidence**: 36% of transactions involving customers aged between 26 and 30 also involve owning 1 or 2 cars.
+
+##### 3. Hybrid Association Rules
+Hybrid association rules are used in mixed multivariate data, transactions with numeric outcomes, and other complex data types. These rules combine both categorical and numeric attributes.
+- **Example**: Age ∈ [26,30] ∧ Keyboard ⇒ Mouse ∈ {1,2}
+    - This rule indicates that customers aged between 26 and 30 who buy a keyboard are likely to buy 1 or 2 mice.
+
+These categories help in identifying and analyzing different types of relationships in various datasets, providing valuable insights for decision-making and strategic planning.
+
+
+
+
+### Algorithms for Association Rule Mining
+
+Several algorithms are used for mining association rules, including:
+
+- **Apriori Algorithm**: This algorithm generates frequent itemsets by iteratively expanding them one item at a time and pruning itemsets that do not meet the minimum support threshold.
+- **FP-Growth Algorithm**: This algorithm uses a compact data structure called the FP-tree to represent the dataset and extract frequent itemsets without candidate generation.
+- **Eclat Algorithm**: This algorithm uses a depth-first search strategy to find frequent itemsets by intersecting transaction lists.
+
+Pattern mining and association rules are powerful tools for uncovering hidden patterns and relationships in data, providing valuable insights for decision-making and strategic planning.
+
+
+### Example of FP-Growth in Python
+
+The FP-Growth algorithm is an efficient method for mining frequent itemsets without candidate generation. Below is an example of how to apply the FP-Growth algorithm using the `mlxtend` library in Python.
+
+First, install the `mlxtend` library if you haven't already:
+```bash
+pip install mlxtend
+```
+
+Here's an example of applying FP-Growth to a dataset of transactions:
+
+```python
+import pandas as pd
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import fpgrowth
+
+# Sample data
+transactions = [
+    ['milk', 'bread', 'butter'],
+    ['bread', 'butter'],
+    ['milk', 'bread'],
+    ['milk', 'butter'],
+    ['bread', 'butter', 'jam'],
+    ['milk', 'bread', 'butter', 'jam']
+]
+
+# Convert transactions to one-hot encoded DataFrame
+te = TransactionEncoder()
+te_ary = te.fit(transactions).transform(transactions)
+df = pd.DataFrame(te_ary, columns=te.columns_)
+
+# Apply FP-Growth algorithm
+frequent_itemsets = fpgrowth(df, min_support=0.5, use_colnames=True)
+
+print(frequent_itemsets)
+```
+
+In this example:
+- We define a list of transactions.
+- We use `TransactionEncoder` to convert the transactions into a one-hot encoded DataFrame.
+- We apply the `fpgrowth` function to find frequent itemsets with a minimum support of 0.5.
+
+The output will be a DataFrame of frequent itemsets and their support values.
+
+For more details, refer to the [mlxtend documentation](http://rasbt.github.io/mlxtend/user_guide/frequent_patterns/fpgrowth/).
+
+
+## Condensed Patterns
+
+Condensed patterns are a subset of frequent patterns that provide a more compact and informative representation of the data. They help reduce the number of patterns to be analyzed while retaining the essential information. Here are some key types of condensed patterns:
+
+![alt text](aula_4_pattern_mining_condensed_patterns.jpg)
+
+### Closed Patterns
+Closed patterns are frequent itemsets for which there are no supersets with the same support. In other words, a closed pattern is an itemset that cannot be extended by adding more items without reducing its support.
+- **Example**: If the itemset {A, B} has the same support as {A, B, C}, then {A, B} is not closed, but {A, B, C} is.
+
+### Simple Patterns
+Simple patterns are minimal patterns that cannot be further simplified without losing their frequent property. They represent the smallest sets of items that frequently occur together.
+- **Example**: If {A, B} is frequent and removing any item from it makes it infrequent, then {A, B} is a simple pattern.
+
+### Maximal Patterns
+Maximal patterns are frequent itemsets that have no frequent supersets. They represent the largest sets of items that frequently occur together.
+- **Example**: If {A, B, C} is frequent and there are no frequent itemsets that contain {A, B, C} as a subset, then {A, B, C} is a maximal pattern.
+
+### Shapes
+Shapes refer to the geometric representation of patterns in the data. They help visualize the structure and distribution of patterns, making it easier to identify clusters, trends, and anomalies.
+- **Example**: In a 2D space, the shape of a pattern could be a cluster of points that form a specific geometric shape, such as a circle or ellipse.
+
+Condensed patterns provide a more efficient and insightful way to analyze frequent patterns, helping to uncover meaningful relationships and structures in the data.
+
+
+
+## Exame tipo 2022
+
+https://web.ist.utl.pt/rmch/dash/exam/ExamANS_2022.pdf
+
+### Exame 2022 Clustering 
+![alt text](aula_4_exame_2022_clustering.jpg)
+
+#### 1 - [0.5v] Complete the following pairwise distance matrix
+d(x1,x3)=6
+d(x1,x4)=1
+
+
+#### 1.2.  [1v] Can the given clustering solution be obtained by an agglomerative under single link?
+ Yes or No?
+
+
+#### 1.2v Let 𝐱1 and 𝐱4 be the initial centroids of k-means. Compute one iteration of the
+k-means, identifying the new centroids using medoid averaging criteria.
+
+
+#### 1.4. [0.6v] Using 𝑑(𝐱𝐴, 𝐱𝐵), identify the silhouette of observation 𝐱4
+
+
+#### 7- [0.5v] Given the following data plot (right),
+select the proper clustering stances to recover its clusters:
+c) soft clustering (correct)
+
+
+#### 8- [1v] Classify the following statements as True or False:
+a) Clustering is semi-supervised when pairs of observations are known to belong
+to the same cluster. **TRUE**
+b) Agglomerative clustering algorithms allow to manually select a desirable
+number of clusters once a dendrogram is inferred. **TRUE**
+c) Complete (maximum) link criterion tends to break large clusters and is biased
+towards globular clusters. **TRUE**
+d) A rand index that is close to zero suggests that the clustering algorithm was
+unable to guarantee high cluster dissimilarity **FALSE**
+
+### Exame 2022 PCA (Dimensionality Reduction)
+![alt text](aula_4_exame_2022_dimensionality_pca.jpg)
+
+9. [1v] What is the percentage of data variability explained by eigenvector 𝐯2?
+ lambda 2 / (lambda 1 + 2)
+
+10. [1.2v] Project the numeric values of 𝐷 to the reduced space using 𝐯2. 
+Answer (image on right site)
+
+11. [0.5v] Identify the eigenvector 𝐯1.
+Solving 𝐶𝐯1 = 𝜆1𝐯1 equations (and optional normalization) yields 𝐯1 ≈ (−0.4 , 0.9)
+
+### Exame 2022 Pattern Mining
+
+![alt text](aula_4_exame_2022_pattern_mining.jpg)
+
+12 -  [1.7v] Selecting y3 and y4, identify all the closed and maximal frequent itemsets
+with a relative support above 0.5.
+closed: 𝐴[𝑠𝑢𝑝 = 3], 𝐴𝐶[𝑠𝑢𝑝 = 2],𝐷[𝑠𝑢𝑝 = 2]
+maximal: 𝐴𝐶[𝑠𝑢𝑝 = 2],𝐷[𝑠𝑢𝑝 = 2]
+
+13 - [0.8v] Given the association rule, 𝐴𝐶 ⇒ 𝑋, compute its support, confidence and lift.
+
+
+## Biclustering
+
+### Introduction to Biclustering
+
+Biclustering, also known as co-clustering or two-way clustering, is a data mining technique that simultaneously clusters rows and columns of a matrix. Unlike traditional clustering methods that group either rows or columns, biclustering identifies submatrices where rows and columns exhibit similar behavior. This technique is particularly useful in analyzing data with complex structures, such as gene expression data, where genes and conditions can be co-regulated.
+
+### Motivation for Biclustering
+
+The motivation for biclustering arises from the need to uncover local patterns in data that may not be apparent through global clustering methods. Some key motivations include:
+
+1. **Complex Data Structures**: In many real-world datasets, such as gene expression data, traditional clustering methods may fail to capture the intricate relationships between subsets of rows and columns. Biclustering addresses this by identifying submatrices with coherent patterns.
+
+2. **Co-Regulation Analysis**: In bioinformatics, biclustering is used to identify groups of genes that are co-regulated under specific conditions. This helps in understanding gene functions and regulatory mechanisms.
+
+3. **Market Basket Analysis**: In retail, biclustering can be used to identify groups of customers who purchase similar sets of products, providing insights for targeted marketing and inventory management.
+
+4. **Recommendation Systems**: Biclustering can enhance recommendation systems by identifying user-item subgroups with similar preferences, leading to more accurate recommendations.
+
+### Example of Biclustering in Python
+
+Here's a simple example of applying biclustering using the Spectral Biclustering algorithm from the `sklearn` library:
+
+```python
+import numpy as np
+from sklearn.datasets import make_biclusters
+from sklearn.cluster import SpectralBiclustering
+import matplotlib.pyplot as plt
+
+# Generate synthetic data with biclusters
+data, rows, columns = make_biclusters(shape=(300, 300), n_clusters=5, noise=0.1, random_state=0)
+
+# Apply Spectral Biclustering
+model = SpectralBiclustering(n_clusters=5, random_state=0)
+model.fit(data)
+
+# Plot the biclusters
+fit_data = data[np.argsort(model.row_labels_)]
+fit_data = fit_data[:, np.argsort(model.column_labels_)]
+
+plt.matshow(fit_data, cmap='viridis')
+plt.title("Biclusters")
+plt.show()
+```
+
+In this example:
+- We generate synthetic data with biclusters.
+- We apply the Spectral Biclustering algorithm to identify the biclusters.
+- We plot the biclusters to visualize the coherent submatrices.
+
+Biclustering provides a powerful approach to uncovering hidden patterns in complex datasets, making it a valuable tool in various fields such as bioinformatics, marketing, and recommendation systems.
+![alt text](aula_4_biclustering.jpg)
