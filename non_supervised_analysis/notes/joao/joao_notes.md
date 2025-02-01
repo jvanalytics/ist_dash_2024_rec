@@ -630,53 +630,68 @@ maximal: 𝐴𝐶[𝑠𝑢𝑝 = 2],𝐷[𝑠𝑢𝑝 = 2]
 
 
 ## Biclustering
-
-### Introduction to Biclustering
-
-Biclustering, also known as co-clustering or two-way clustering, is a data mining technique that simultaneously clusters rows and columns of a matrix. Unlike traditional clustering methods that group either rows or columns, biclustering identifies submatrices where rows and columns exhibit similar behavior. This technique is particularly useful in analyzing data with complex structures, such as gene expression data, where genes and conditions can be co-regulated.
-
-### Motivation for Biclustering
-
-The motivation for biclustering arises from the need to uncover local patterns in data that may not be apparent through global clustering methods. Some key motivations include:
-
-1. **Complex Data Structures**: In many real-world datasets, such as gene expression data, traditional clustering methods may fail to capture the intricate relationships between subsets of rows and columns. Biclustering addresses this by identifying submatrices with coherent patterns.
-
-2. **Co-Regulation Analysis**: In bioinformatics, biclustering is used to identify groups of genes that are co-regulated under specific conditions. This helps in understanding gene functions and regulatory mechanisms.
-
-3. **Market Basket Analysis**: In retail, biclustering can be used to identify groups of customers who purchase similar sets of products, providing insights for targeted marketing and inventory management.
-
-4. **Recommendation Systems**: Biclustering can enhance recommendation systems by identifying user-item subgroups with similar preferences, leading to more accurate recommendations.
-
-### Example of Biclustering in Python
-
-Here's a simple example of applying biclustering using the Spectral Biclustering algorithm from the `sklearn` library:
-
-```python
-import numpy as np
-from sklearn.datasets import make_biclusters
-from sklearn.cluster import SpectralBiclustering
-import matplotlib.pyplot as plt
-
-# Generate synthetic data with biclusters
-data, rows, columns = make_biclusters(shape=(300, 300), n_clusters=5, noise=0.1, random_state=0)
-
-# Apply Spectral Biclustering
-model = SpectralBiclustering(n_clusters=5, random_state=0)
-model.fit(data)
-
-# Plot the biclusters
-fit_data = data[np.argsort(model.row_labels_)]
-fit_data = fit_data[:, np.argsort(model.column_labels_)]
-
-plt.matshow(fit_data, cmap='viridis')
-plt.title("Biclusters")
-plt.show()
-```
-
-In this example:
-- We generate synthetic data with biclusters.
-- We apply the Spectral Biclustering algorithm to identify the biclusters.
-- We plot the biclusters to visualize the coherent submatrices.
-
-Biclustering provides a powerful approach to uncovering hidden patterns in complex datasets, making it a valuable tool in various fields such as bioinformatics, marketing, and recommendation systems.
 ![alt text](aula_4_biclustering.jpg)
+
+Biclustering, also known as co-clustering or two-way clustering, is a data mining technique that simultaneously clusters rows and columns of a matrix. Unlike traditional global clustering methods that group either rows or columns independently, biclustering aims to find local patterns by identifying submatrices with high homogeneity and coherence.
+Biclustering is particularly useful in fields such as bioinformatics, where it can identify gene expression patterns across different conditions, and in market basket analysis, where it can uncover associations between products and customer segments. By focusing on local patterns, biclustering provides a more nuanced understanding of complex datasets.
+
+### Global Clustering vs Local Biclustering
+
+- **Global Clustering**: This approach groups the entire dataset into clusters based on overall similarity. It is effective for identifying broad patterns but may miss local structures and specific relationships within subsets of the data.
+- **Local Biclustering**: In contrast, biclustering focuses on discovering local patterns by clustering subsets of rows and columns simultaneously. This method can reveal more detailed and specific structures within the data, capturing local coherence that global clustering might overlook.
+
+### Key Concepts
+
+- **Homogeneity**: Biclustering aims to find submatrices where the data points are similar to each other, ensuring that the identified clusters are homogeneous.
+    - **Coherence**: This refers to the consistency of patterns within the biclusters. Coherent biclusters exhibit a structured relationship between rows and columns, maintaining a consistent pattern across the submatrix.
+    - **Structure**: Biclustering identifies the underlying structure within the data by revealing submatrices that exhibit specific patterns or relationships. This helps in understanding the intricate details of the dataset.
+    - **Quality**: The quality of biclusters is evaluated based on criteria such as homogeneity, coherence, and the ability to capture meaningful patterns. High-quality biclusters provide valuable insights into the data.
+
+
+### Models in Biclustering
+
+Biclustering models are designed to identify different types of patterns within submatrices of a dataset. Here are some common models used in biclustering:
+
+#### 1. Constant Model
+The constant model identifies biclusters where all values are approximately the same. This model is useful for finding submatrices with uniform values.
+- **Example**: A submatrix where all gene expression levels are similar across different conditions.
+
+#### 2. Constant Rows Model
+The constant rows model identifies biclusters where each row has a constant value, but the values can differ between rows. This model captures patterns where rows exhibit consistent behavior across columns.
+- **Example**: A submatrix where each gene has a constant expression level across different conditions, but the levels vary between genes.
+
+#### 3. Constant Columns Model
+The constant columns model identifies biclusters where each column has a constant value, but the values can differ between columns. This model captures patterns where columns exhibit consistent behavior across rows.
+- **Example**: A submatrix where each condition has a constant gene expression level, but the levels vary between conditions.
+
+#### 4. Additive Model
+The additive model identifies biclusters where the values can be expressed as the sum of a row effect and a column effect. This model captures patterns where the combined effect of rows and columns influences the values.
+- **Example**: A submatrix where gene expression levels are influenced by both gene-specific and condition-specific effects.
+
+#### 5. Multiplicative Model
+The multiplicative model identifies biclusters where the values can be expressed as the product of a row effect and a column effect. This model captures patterns where the interaction between rows and columns influences the values.
+- **Example**: A submatrix where gene expression levels are influenced by the interaction between gene-specific and condition-specific factors.
+
+#### 6. Plaid Model
+The plaid model is a more complex model that identifies biclusters by fitting multiple layers of additive and multiplicative effects. This model captures overlapping biclusters and more intricate patterns within the data.
+- **Example**: A submatrix where gene expression levels are influenced by multiple overlapping factors, such as different biological pathways.
+
+These models provide various approaches to uncovering the underlying structure of data, each suited to different types of patterns and relationships within the dataset.
+
+### Merit Functions
+
+Merit functions are used to evaluate the quality of biclusters by quantifying their homogeneity, coherence, and overall structure. These functions help in identifying the most meaningful and informative biclusters within a dataset.
+
+#### Coherence Strength
+
+Coherence strength measures the consistency of patterns within a bicluster. It evaluates how well the values in the bicluster follow a specific pattern or relationship. Higher coherence strength indicates that the bicluster exhibits a more consistent and structured pattern.
+
+#### Quality
+
+The quality of a bicluster is assessed based on various criteria, including homogeneity, coherence, and the ability to capture meaningful patterns. High-quality biclusters provide valuable insights into the data by revealing significant relationships and structures. Quality metrics help in comparing different biclusters and selecting the most informative ones.
+
+#### Structure
+
+The structure of a bicluster refers to the underlying pattern or relationship between rows and columns within the submatrix. Identifying the structure helps in understanding the intricate details of the dataset and uncovering hidden patterns. Different biclustering models aim to capture various types of structures, such as constant values, additive effects, or multiplicative interactions.
+
+These concepts are essential for evaluating and interpreting the results of biclustering, ensuring that the identified biclusters provide meaningful and actionable insights into the data.
