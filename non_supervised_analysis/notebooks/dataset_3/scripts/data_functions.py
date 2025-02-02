@@ -1189,6 +1189,108 @@ def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
     return df_smote
 
 
+import os
+from openpyxl import load_workbook
+
+
+# Function to append distinct combinations of selected columns into sheets in an Excel file
+def append_columns_to_excel(df, columns_dict, output_file):
+    """
+    Append distinct combinations of selected columns into separate sheets in an existing Excel file,
+    with the columns ordered by their names for easier hierarchical encoding and add an empty encoding column.
+
+    Args:
+    df (pd.DataFrame): The DataFrame containing the columns to save.
+    columns_dict (dict): Dictionary where keys are sheet names, and values are lists of column names to include.
+    output_file (str): The path of the Excel file to save the sheets.
+
+    Returns:
+    None
+    """
+    # Check if the file exists and is a valid Excel file
+    if os.path.exists(output_file):
+        try:
+            # Try to load the existing workbook
+            with pd.ExcelWriter(output_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+                writer.book = load_workbook(output_file)
+                
+                # Loop over each sheet name and corresponding list of columns
+                for sheet_name, columns in columns_dict.items():
+                    # Check if all the specified columns exist in the DataFrame
+                    missing_columns = [col for col in columns if col not in df.columns]
+                    if missing_columns:
+                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+                        continue
+
+                    # Get distinct combinations of the selected columns
+                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+
+                    # Convert columns to strings temporarily for sorting to avoid float-string comparison errors
+                    distinct_values = distinct_values.astype(str)
+
+                    # Sort distinct values by the specified columns for hierarchical grouping
+                    distinct_values.sort_values(by=columns, inplace=True)
+
+                    # Add an empty encoding column for each column in the DataFrame
+                    for col in columns:
+                        distinct_values[f'{col}_enc'] = pd.NA
+
+                    # Write distinct values to a new sheet named after the sheet_name
+                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+                    
+        except Exception as e:
+            print(f"Error: {e}")
+            print("The file might be corrupt or invalid. Creating a new file.")
+            # Create a new file if loading fails
+            with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+                for sheet_name, columns in columns_dict.items():
+                    missing_columns = [col for col in columns if col not in df.columns]
+                    if missing_columns:
+                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+                        continue
+
+                    # Get distinct combinations of the selected columns
+                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+
+                    # Convert columns to strings temporarily for sorting
+                    distinct_values = distinct_values.astype(str)
+
+                    # Sort distinct values by the specified columns for hierarchical grouping
+                    distinct_values.sort_values(by=columns, inplace=True)
+
+                    # Add an empty encoding column for each column in the DataFrame
+                    for col in columns:
+                        distinct_values[f'{col}_enc'] = pd.NA
+
+                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    else:
+        # If the file does not exist, create a new one
+        with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+            for sheet_name, columns in columns_dict.items():
+                missing_columns = [col for col in columns if col not in df.columns]
+                if missing_columns:
+                    print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+                    continue
+
+                # Get distinct combinations of the selected columns
+                distinct_values = df[columns].drop_duplicates().dropna(how='all')
+
+                # Convert columns to strings temporarily for sorting
+                distinct_values = distinct_values.astype(str)
+
+                # Sort distinct values by the specified columns for hierarchical grouping
+                distinct_values.sort_values(by=columns, inplace=True)
+
+                # Add an empty encoding column for each column in the DataFrame
+                for col in columns:
+                    distinct_values[f'{col}_enc'] = pd.NA
+
+                distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+                
+
+
+
 def enrich_instacart_df(df):
     aisles = pd.read_csv('data/input/aisles.csv')
     products = pd.read_csv('data/input/products.csv')
