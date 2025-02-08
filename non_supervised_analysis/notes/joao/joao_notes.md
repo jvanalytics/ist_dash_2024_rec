@@ -695,3 +695,192 @@ The quality of a bicluster is assessed based on various criteria, including homo
 The structure of a bicluster refers to the underlying pattern or relationship between rows and columns within the submatrix. Identifying the structure helps in understanding the intricate details of the dataset and uncovering hidden patterns. Different biclustering models aim to capture various types of structures, such as constant values, additive effects, or multiplicative interactions.
 
 These concepts are essential for evaluating and interpreting the results of biclustering, ensuring that the identified biclusters provide meaningful and actionable insights into the data.
+
+# Aula 5 08/02/2025
+
+## notas adicionais mining pattern discovery
+
+### Pattern Discovery
+![alt text](aula_5_pattern_mining_pattern_discovery.jpg)
+
+- Tabulares, transacionais para padroes multilevel
+
+
+
+## Exame 2022 
+### Pattern Mining
+![alt text](aula_5_pattern_mining_pattern_exame_2022.jpg)
+
+Consider that we have access to additional observations, leading to the
+following re-evaluation of rule
+𝐴𝐶 ⇒ 𝑋 [support = 0.5, Binomial 𝑝value = 1𝐸 − 3, confidence = 0.8, lift = 0.99]
+Classify the following statements as True or False:
+    - a) Assuming a significance level 𝛼 = 0.1, the given pattern is not statistically significant **FALSE**
+    - b) The given lift suggests an interesting/strong association rule **FALSE**
+    - c) The given lift suggests that the consequent, 𝑋, is highly frequent **TRUE**
+    - d) If 𝐴𝐶 is a frequent itemset, a superset (e.g. 𝐴𝐶𝑋) is also frequent (monotonicity) **FALSE**
+
+### 15. [1.4v] Selecting y1 and y2, identify the largest constant bicluster and the largest order-preserving bicluster with 𝛿=0 and no noise (𝜀 = 0)
+
+- Answer: Constant (I={x1,x4},J={y1,y2}), Order-preserving (I={x1,x2,x3,x4},J={y1,y2})
+
+#### bicluster finding explanation
+Constant Bicluster
+A constant bicluster is a submatrix where all the elements are the same. To identify a constant bicluster, you need to look for a subset of rows (I) and a subset of columns (J) such that all the elements in the intersection of these rows and columns are identical.
+
+Order-Preserving Bicluster
+An order-preserving bicluster is a submatrix where the order of the elements is preserved across rows and columns. This means that if you sort the elements in one row, the relative order of the elements in the other rows should be the same. For example, if in one row the elements are in ascending order, they should be in ascending order in all other rows of the bicluster.
+
+Example Matrix
+Let's consider a simple example matrix to illustrate these concepts:
+```
+    y1  y2  y3
+x1  1   2   3
+x2  1   2   4
+x3  1   2   5
+x4  1   2   6
+```
+##### Identifying the Biclusters
+1. Constant Bicluster:
+
+- Look for a submatrix where all elements are the same.
+- In the example matrix, the submatrix formed by rows {x1, x4} and columns {y1, y2} is:
+```
+    y1  y2
+x1  1   2
+x4  1   2
+```
+- This submatrix is not constant since the elements are not the same. However, if we consider rows {x1, x2, x3, x4} and columns {y1}, we get:
+```
+    y1
+x1  1
+x2  1
+x3  1
+x4  1
+```
+This submatrix is constant.
+
+2. Order-Preserving Bicluster:
+- Look for a submatrix where the order of elements is preserved.
+- In the example matrix, the submatrix formed by rows {x1, x2, x3, x4} and columns {y1, y2} is:
+```
+    y1  y2
+x1  1   2
+x2  1   2
+x3  1   2
+x4  1   2
+```
+
+The order of elements in each row is preserved (1, 2).
+Conclusion
+- For the constant bicluster, you need to find a submatrix where all elements are the same.
+- For the order-preserving bicluster, you need to find a submatrix where the relative order of elements is the same across all rows and columns.
+
+In the provided answer:
+
+The constant bicluster is identified as (I={x1,x4},J={y1,y2}).
+The order-preserving bicluster is identified as (I={x1,x2,x3,x4},J={y1,y2}).
+
+#### 16. [0.8v] Given the additive bicluster (I={x1,x2,x3,x4},J={y1,y2}) and 𝛿=0, compute its quality.
+
+- **ANSWER** Considering additive factors {𝛾1=0, 𝛾2=2, 𝛾3=2, 𝛾4=0}, the quality is 7/8
+
+#### 16 explanation
+To compute the quality of the given additive bicluster, we need to understand the concept of additive biclustering and how the quality is calculated.
+
+Additive Biclustering
+In additive biclustering, we have a subset of rows (I) and a subset of columns (J) from a data matrix. The goal is to find a submatrix where the values can be represented as the sum of a row-specific factor (𝛾) and a column-specific factor (𝛿).
+
+Given Data
+Rows (I): {x1, x2, x3, x4}
+Columns (J): {y1, y2}
+Row-specific factors (𝛾): {𝛾1=0, 𝛾2=2, 𝛾3=2, 𝛾4=0}
+Column-specific factor (𝛿): 0
+Quality Calculation
+The quality of an additive bicluster is typically calculated based on how well the actual values in the submatrix match the expected values given by the additive model. However, since the exact formula for quality isn't provided, we'll assume a simplified version where the quality is the ratio of the sum of the row-specific factors to the total number of elements in the bicluster.
+
+
+Sum of Row-specific Factors (𝛾): 0 + 2 + 2 + 0 = 4
+
+Total Number of Elements in the Bicluster: 4 * 2 = 8
+
+Quality Calculation: Quality = 4 / 8 = 0.5
+
+### 17. [0.75v] Classify the following statements as True or False:
+- a) "A biclustering solution with 2 biclusters with overlapping elements is always non-exhaustive on rows and columns." Answer: **FALSE**
+    - Explanation: Biclustering is a technique used to find submatrices (biclusters) in a data matrix where both rows and columns exhibit similar behavior. A biclustering solution can have overlapping elements, meaning some rows or columns can belong to more than one bicluster. The term "non-exhaustive" means that not all rows and columns are covered by the biclusters. However, the presence of overlapping elements does not necessarily imply that the solution is non-exhaustive. It is possible to have overlapping biclusters that still cover all rows and columns, making the solution exhaustive.
+
+- b)"Given a biclustering search, a statistically significant bicluster that was not retrieved by this search is termed false positive." Answer: **FALSE**
+    - Explanation: In statistical terms, a false positive is an incorrect identification of a condition or attribute that is not actually present. In the context of biclustering, a false positive would mean identifying a bicluster that is not statistically significant. However, if a statistically significant bicluster was not retrieved by the search, it is not a false positive but rather a false negative. A false negative occurs when a condition or attribute that is present is not identified by the search.
+
+- c) "The coherence strength of a bicluster determines the deviations from expectations." Answer: **TRUE**
+    - Explanation: Coherence strength in biclustering refers to the degree to which the elements within a bicluster exhibit a consistent pattern or behavior. This consistency is measured against some expected behavior or baseline.
+    Therefore, the coherence strength determines how much the actual data deviates from these expectations. Higher coherence strength indicates smaller deviations, meaning the elements in the bicluster are more similar to each other and to the expected pattern. 
+
+
+### 19. Outlier Analysis. Classify the following statements as True or False:
+a) Given specific context variables, a contextual outlier observation is an observation that significantly deviates from other observations that share the same context. Answer: **True**  
+    **Explanation:** Contextual outliers are identified based on the context or environment in which the data is observed. If an observation deviates significantly from others within the same context, it is considered a contextual outlier.
+
+b) A collective outlier is an observation that deviates from neighbour observations. Answer: **False**  
+    **Explanation:** Collective outliers refer to a group of observations that deviate collectively from the rest of the data, rather than individually. An individual observation deviating from its neighbors is typically considered a point outlier, not a collective outlier.
+
+c) Observations in clusters with bad cohesion (sparse clusters) are outlier candidates. Answer: **True**  
+    **Explanation:** Sparse clusters indicate poor cohesion among observations, making them potential outliers. Observations in such clusters do not fit well with the rest of the data, suggesting they may be outliers.
+
+d) Given a data where a few observations are annotated with normal/non-outlier tag, these observations should be removed to better detect outliers. Answer: **False**  
+    **Explanation:** Removing observations labeled as normal/non-outliers can lead to loss of valuable information and may hinder the accurate detection of outliers. These labeled observations provide a reference for identifying outliers.
+
+e) Density-based outlier analysis approaches can be used to identify local outliers. Answer: **True**  
+    **Explanation:** Density-based methods, such as DBSCAN, identify outliers by examining the density of data points. Local outliers are detected in regions of low density compared to their neighbors, making these methods effective for identifying local outliers.
+
+
+## Aspetos avançados analise multivariada
+https://e.tecnicomais.pt/pluginfile.php/350485/mod_resource/content/3/07%20AdvancedPM.pdf
+
+![alt text](aula_5_advanced_pattern_mining.jpg)
+### Discovering Patterns in Multivariate, Symbolic, and Time Series Data
+
+#### Multivariate Data
+Discovering patterns in multivariate data involves analyzing datasets with multiple variables to identify relationships and dependencies among them. Techniques such as clustering, association rule mining, and dimensionality reduction are commonly used to uncover patterns in multivariate data. These patterns can reveal insights into the interactions between variables and help in understanding the underlying structure of the data.
+
+#### Symbolic Data
+Symbolic data refers to data that consists of symbols or categorical values rather than numerical values. Pattern discovery in symbolic data often involves techniques such as frequent itemset mining, association rule mining, and sequence mining. These methods help identify common patterns, associations, and sequences of symbols that occur frequently in the dataset. Symbolic pattern discovery is widely used in fields such as text mining, bioinformatics, and market basket analysis.
+
+#### Time Series Data
+Time series data consists of observations recorded at successive points in time. Discovering patterns in time series data involves identifying trends, seasonal patterns, and anomalies over time. Techniques such as time series decomposition, autocorrelation analysis, and dynamic time warping are commonly used to analyze time series data. Additionally, methods like motif discovery and shape-based clustering help in identifying recurring patterns and similar sequences within the time series data. Time series pattern discovery is crucial in applications such as financial analysis, weather forecasting, and sensor data analysis.
+
+These techniques provide valuable insights into the structure and behavior of multivariate, symbolic, and time series data, enabling better decision-making and strategic planning.
+
+## Aula 5 part 2
+
+![alt text](aula_5_advanced_pattern_mining_extracao_associacao_distancias.jpg)
+
+
+### Neural Networks for Pattern Analysis
+![alt text](<aula_5_redes neuronais.jpg>)
+
+Neural networks are computational models inspired by the human brain, consisting of interconnected layers of nodes (neurons) that process and transform input data to produce an output. They are particularly suitable for pattern analysis, clustering, and association due to their ability to learn complex relationships and representations from data.
+
+### How Neural Networks Work
+
+1. **Input Layer**: The input layer receives the raw data and passes it to the subsequent layers.
+2. **Hidden Layers**: These layers perform computations and transformations on the input data. Each neuron in a hidden layer applies a weighted sum of its inputs, adds a bias term, and passes the result through an activation function (e.g., ReLU, sigmoid).
+3. **Output Layer**: The output layer produces the final prediction or classification based on the transformed data from the hidden layers.
+
+### Training Neural Networks
+
+Neural networks are trained using a process called backpropagation, which involves the following steps:
+1. **Forward Pass**: The input data is passed through the network to compute the output.
+2. **Loss Calculation**: The difference between the predicted output and the actual target is measured using a loss function (e.g., mean squared error, cross-entropy).
+3. **Backward Pass**: The gradients of the loss with respect to the network parameters (weights and biases) are computed using the chain rule.
+4. **Parameter Update**: The network parameters are updated using an optimization algorithm (e.g., stochastic gradient descent, Adam) to minimize the loss.
+
+### Applications in Pattern Analysis
+
+1. **Pattern Recognition**: Neural networks can identify and classify patterns in data, such as images, text, and audio, by learning hierarchical representations.
+2. **Clustering**: Autoencoders and self-organizing maps (SOMs) are types of neural networks used for clustering. Autoencoders learn a compressed representation of the data, which can be used for clustering similar data points. SOMs map high-dimensional data to a lower-dimensional grid, preserving the topological structure.
+3. **Association**: Recurrent neural networks (RNNs) and long short-term memory (LSTM) networks are suitable for sequence data and can learn associations and dependencies over time. They are used in applications like language modeling, time series forecasting, and anomaly detection.
+
+Neural networks' ability to learn from data and capture complex patterns makes them powerful tools for various pattern analysis tasks, including clustering and association.
+
