@@ -687,6 +687,7 @@ def mlp_study(
     tstY: array,
     nr_max_iterations: int = 2500,
     lag: int = 500,
+    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005],
     metric: str = "accuracy",
     file_tag=''    
 ) -> tuple[MLPClassifier | None, dict]:
@@ -699,7 +700,7 @@ def mlp_study(
         "invscaling",
         "adaptive",
     ]  # only used if optimizer='sgd'
-    learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
+    #learning_rates: list[float] = [0.5, 0.05, 0.005, 0.0005]
 
     best_model: MLPClassifier | None = None
     best_params: dict = {"name": "MLP", "metric": metric, "params": ()}
@@ -777,8 +778,8 @@ def random_forests_study(
     file_tag=''
 ) -> tuple[RandomForestClassifier | None, dict]:
     n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
-    max_depths: list[int] = [2, 5, 7]
-    max_features: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+    max_depths: list[int] = [2, 6, 10]
+    max_features: list[float] = [0.5, 0.1, 0.05, 0.001, 0.0005]
 
     best_model: RandomForestClassifier | None = None
     best_params: dict = {"name": "RF", "metric": metric, "params": ()}
@@ -848,7 +849,7 @@ def gradient_boosting_study(
 ) -> tuple[GradientBoostingClassifier | None, dict]:
     n_estimators: list[int] = [100] + [i for i in range(500, nr_max_trees + 1, lag)]
     max_depths: list[int] = [2, 5, 7]
-    learning_rates: list[float] = [0.1, 0.3, 0.5, 0.7, 0.9]
+    learning_rates: list[float] = [0.1, 0.3, 0.5, 0.7, 0.99]
 
     best_model: GradientBoostingClassifier | None = None
     best_params: dict = {"name": "GB", "metric": metric, "params": ()}
@@ -1100,6 +1101,34 @@ def apply_balanced_downsampling(df: DataFrame,target='returning_user',sort_by='d
     print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
 
     
+    return df_balanced
+
+def apply_balanced_oversampling(df: DataFrame, target='is_clicked', sort_by='day_of_year') -> DataFrame:
+    df_copy = df.copy()
+
+    # Ensure positive_class and negative_class are defined and match the target values
+    positive_class = 1  # Or whatever your positive class value is
+    negative_class = 0  # Or whatever your negative class value is
+
+    # Separate the majority and minority classes
+    df_majority = df_copy[df_copy[target] == negative_class]
+    df_minority = df_copy[df_copy[target] == positive_class]
+
+    # Check the class distribution
+    print(f"Original class distribution:\n{df_copy[target].value_counts(normalize=True) * 100}\n")
+
+    # Oversample the minority class to match the size of the majority class
+    df_minority_oversampled = df_minority.sample(n=len(df_majority), replace=True, random_state=42)
+
+    # Combine the oversampled minority class with the majority class
+    df_balanced = pd.concat([df_majority, df_minority_oversampled])
+
+    # Sort the combined dataset
+    df_balanced.sort_values(by=sort_by, inplace=True)
+
+    # Check the new class distribution to verify the balance
+    print(f"Balanced class distribution:\n{df_balanced[target].value_counts(normalize=True) * 100}\n")
+
     return df_balanced
 
 
