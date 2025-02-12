@@ -1302,5 +1302,100 @@ def enrich_instacart_df(df):
     return enriched_df
 
 
+from sklearn.metrics import pairwise_distances
+
+def mydistance(x1, x2):
+    res = 0
+    fix_weight = 1
+    for j in range(len(x1)):
+        res += fix_weight*abs(x1[j]-x2[j])
+    return res
+
+def affinity(X):
+    return pairwise_distances(X, metric=mydistance)
+
+
+import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+
+def evaluate_agglomerative_clustering(X, 
+                                      n_clusters_list=[2, 3, 4, 5], 
+                                      metric_list=['euclidean', 'manhattan', 'cosine'], 
+                                      linkage_list=['ward', 'complete', 'average', 'single'],
+                                      scale='no',
+                                      title='Silhouette Scores for Different Clustering Parameters'):
+    # Scale the data if required
+    if scale == 'yes':
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+
+    # Store the results
+    results = []
+
+    for n_clusters in n_clusters_list:
+        for metric in metric_list:
+            for linkage in linkage_list:
+                if linkage == 'ward' and metric != 'euclidean':
+                    continue  # Ward linkage only works with Euclidean distance
+                clustering = AgglomerativeClustering(n_clusters=n_clusters, metric=metric, linkage=linkage)
+                labels = clustering.fit_predict(X)
+                score = silhouette_score(X, labels)
+                results.append((n_clusters, metric, linkage, score))
+
+    # Convert results to a structured array for easy plotting
+    dtype = [('n_clusters', int), ('metric', 'U10'), ('linkage', 'U10'), ('score', float)]
+    results = np.array(results, dtype=dtype)
+
+    # Plot the results
+    fig, axes = plt.subplots(2, 2, figsize=(15, 12), sharex=True)
+    axes = axes.flatten()
+    
+    for ax, linkage in zip(axes, linkage_list):
+        for metric in metric_list:
+            subset = results[(results['metric'] == metric) & (results['linkage'] == linkage)]
+            ax.plot(subset['n_clusters'], subset['score'], label=f'{metric}')
+            for (n_clusters, score) in zip(subset['n_clusters'], subset['score']):
+                ax.text(n_clusters, score, f'{score:.2f}', fontsize=8, ha='right')
+        
+        ax.set_title(f'Linkage: {linkage}')
+        ax.set_xlabel('Number of Clusters')
+        ax.set_ylabel('Silhouette Score')
+        ax.legend(loc='upper right')
+        ax.set_xticks(n_clusters_list)
+        ax.set_xticklabels([str(n) for n in n_clusters_list])
+    
+    fig.suptitle(title, fontsize=16)
+    plt.show()
+
+
+import seaborn as sns
+
+def plot_cluster_boxplots(dataframe, features, cluster_labels):
+    """
+    Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
+
+    Parameters:
+    dataframe (pd.DataFrame): The dataframe containing the data.
+    features (list): List of features to plot.
+    cluster_labels (list): List of cluster labels to compare.
+    """
+    # Create subplots
+    fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
+
+    # Loop through each feature and create boxplots
+    for i, feature in enumerate(features):
+        for j, cluster_label in enumerate(cluster_labels):
+            sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
+            axes[i, j].set_title(f'{cluster_label} - {feature}')
+
+    # Adjust layout
+    plt.tight_layout()
+    plt.show()
+
+
+
 print("data_functions lodaded")
+
 
