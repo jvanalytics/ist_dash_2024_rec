@@ -5,11 +5,11 @@
 ## Project Datasets
 
 
-1. Dataset 1 Customer personality Analysis
+1. [Francisco]Dataset 1 Customer personality Analysis
    - https://www.kaggle.com/datasets/imakash3011/customer-personality-analysis
    - https://www.kaggle.com/code/karnikakapoor/customer-segmentation-clustering (same dataset, with respecrive notebook)
 
-2. [Eug]Dataset 2 Bakery Sales
+2. [Eugénia]Dataset 2 Bakery Sales
    - https://www.kaggle.com/datasets/hosubjeong/bakery-sales 
 
 3. [João]Dataset 3 Instacart Market Basket Analysis
