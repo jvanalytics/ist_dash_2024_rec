@@ -1372,15 +1372,23 @@ def evaluate_agglomerative_clustering(X,
 
 import seaborn as sns
 
-def plot_cluster_boxplots(dataframe, features, cluster_labels):
+def plot_cluster_boxplots(dataframe, features, cluster_labels, file_tag=None):
     """
     Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
+    Optionally adds a prefix to the title of the graph if file_tag is provided.
 
     Parameters:
     dataframe (pd.DataFrame): The dataframe containing the data.
     features (list): List of features to plot.
     cluster_labels (list): List of cluster labels to compare.
+    file_tag (str, optional): Prefix to add to the title of the graph.
     """
+
+    # Ensure cluster values within each cluster label are ordered
+    for cluster_label in cluster_labels:
+        dataframe[cluster_label] = dataframe[cluster_label].astype('category')
+        dataframe[cluster_label].cat.set_categories(sorted(dataframe[cluster_label].unique()))
+
     # Create subplots
     fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
 
@@ -1388,11 +1396,67 @@ def plot_cluster_boxplots(dataframe, features, cluster_labels):
     for i, feature in enumerate(features):
         for j, cluster_label in enumerate(cluster_labels):
             sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
-            axes[i, j].set_title(f'{cluster_label} - {feature}')
+            title_prefix = f'{file_tag} - ' if file_tag else ''
+            axes[i, j].set_title(f'{title_prefix}{cluster_label} Distribution - {feature}')
 
     # Adjust layout
     plt.tight_layout()
     plt.show()
+
+
+
+from scipy.stats import binom
+from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+def find_patterns(dataframe, mine_rules=True, min_patterns=10, min_length=3, max_pvalue=0.1, min_confidence=0.6, min_lift=1.4):
+    """
+    Finds frequent itemsets and association rules in the given dataframe using the FP-Growth algorithm.
+    Parameters:
+    dataframe (pd.DataFrame): The input dataframe containing the data to analyze.
+    mine_rules (bool): Whether to mine association rules from the frequent itemsets. Default is True.
+    min_patterns (int): The minimum number of patterns to find before stopping. Default is 10.
+    min_length (int): The minimum length of the itemsets to consider. Default is 3.
+    max_pvalue (float): The maximum p-value for the significance of the patterns. Default is 0.1.
+    min_confidence (float): The minimum confidence for the association rules. Default is 0.6.
+    min_lift (float): The minimum lift for the association rules. Default is 1.4.
+    Returns:
+    pd.DataFrame: A dataframe containing the found patterns and their metrics.
+    """
+    
+    def add_significance(patterns, df):
+        N = len(df)
+        probs = {col: df[[col]].eq(1).sum()[col] / N for col in df.columns}
+        
+        patterns['significance'] = 0.0
+        for i, pattern in patterns.iterrows():
+            prob = 1
+            for item in pattern['itemsets']:
+                prob *= probs[item]
+            patterns.at[i, 'significance'] = 1 - binom.cdf(pattern['support'] * N - 1, N, prob)
+
+    patterns = {}
+    min_support = 1
+    while min_support > 0:
+        min_support = min_support * 0.9
+        print("Finding patterns with min sup %f" % min_support)
+        patterns = fpgrowth(dataframe, min_support=min_support, use_colnames=True)
+
+        if mine_rules and len(patterns) > 0:
+            patterns = association_rules(patterns, metric="lift", min_threshold=min_lift)
+            patterns = patterns[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
+            patterns = patterns[(patterns['confidence'] >= min_confidence)]
+            patterns['itemsets'] = [x | y for x, y in zip(patterns['antecedents'], patterns['consequents'])]
+
+        patterns['length'] = patterns['itemsets'].apply(lambda x: len(x))
+        patterns = patterns[(patterns['length'] >= min_length)]
+        add_significance(patterns, dataframe)
+        patterns = patterns[(patterns['significance'] <= max_pvalue)]
+
+        if len(patterns) >= min_patterns:
+            break
+
+    print("Number of found patterns:", len(patterns))
+    return patterns
 
 
 
