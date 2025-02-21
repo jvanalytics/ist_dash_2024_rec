@@ -1322,7 +1322,7 @@ from sklearn.preprocessing import StandardScaler
 
 def evaluate_agglomerative_clustering(X, 
                                       n_clusters_list=[2, 3, 4, 5], 
-                                      metric_list=['euclidean', 'manhattan', 'cosine'], 
+                                      metric_list=['euclidean', 'manhattan', 'cosine', 'chebyshev', 'hamming'], 
                                       linkage_list=['ward', 'complete', 'average', 'single'],
                                       scale='no',
                                       title='Silhouette Scores for Different Clustering Parameters'):
