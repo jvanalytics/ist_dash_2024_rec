@@ -1455,11 +1455,11 @@ def find_patterns(dataframe, mine_rules=True, min_patterns=10, min_length=3, max
         if len(patterns) >= min_patterns:
             break
 
+    patterns['itemsets'] = patterns['itemsets'].apply(lambda x: ', '.join(list(x)))
     print("Number of found patterns:", len(patterns))
     return patterns
 
 
 
-print("data_functions lodaded")
-
+print("data_functions loaded")
 
