@@ -181,3 +181,6 @@ notebooks/ecommerce_behaviour/dataset/.DS_Store
 .DS_Store
 non_supervised_analysis/notebooks/dataset_3/data/instacart_pre_proc_sample.zip
 non_supervised_analysis/notebooks/dataset_3/G02_notebook_dataset*.ipynb
+non_supervised_analysis/templates/G02_report1_backup.docx
+non_supervised_analysis/templates/G02_report1_backup.docx
+*.docx
