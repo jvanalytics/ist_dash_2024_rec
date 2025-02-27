@@ -1517,5 +1517,30 @@ def timeseries_agg_pivot_df(df, date_col='event_date', nunique_cols=None, sum_co
     return pivoted
 
 
+
+from dslabs_functions import plot_line_chart
+
+
+def plot_ts_multivariate_chart(data: DataFrame, title: str) -> list[Axes]:
+    fig: Figure
+    axs: list[Axes]
+    height = 10  # Hardcoded height for more margin between subplots
+    fig, axs = subplots(data.shape[1], 1, figsize=(3 * height, height / 2 * data.shape[1]))
+    fig.suptitle(title)
+
+    for i in range(data.shape[1]):
+        col: str = data.columns[i]
+        plot_line_chart(
+            data[col].index.to_list(),
+            data[col].to_list(),
+            ax=axs[i],
+            xlabel=data.index.name,
+            ylabel='',
+        )
+        axs[i].set_title(col, fontsize=10, pad=10)
+        axs[i].margins(y=0.8)  # Add space between each chart
+    return axs
+
+
 print("data_functions loaded")
 

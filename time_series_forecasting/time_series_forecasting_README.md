@@ -12,7 +12,6 @@
 
 3. [João]Dataset 3 
    Supply Forecast
-   - https://www.kaggle.com/datasets/felixzhao/productdemandforecasting
    - https://www.kaggle.com/datasets/anirudhchauhan/retail-store-inventory-forecasting-dataset
 
    Google Merch from previous project
