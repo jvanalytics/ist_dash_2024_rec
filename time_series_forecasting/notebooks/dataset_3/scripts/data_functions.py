@@ -1542,5 +1542,38 @@ def plot_ts_multivariate_chart(data: DataFrame, title: str) -> list[Axes]:
     return axs
 
 
+
+from matplotlib.pyplot import subplots, show, gca
+from matplotlib.axes import Axes
+from statsmodels.tsa.seasonal import DecomposeResult, seasonal_decompose
+from dslabs_functions import HEIGHT, set_chart_labels
+
+
+def plot_components(
+    series: Series,
+    title: str = "",
+    x_label: str = "time",
+    y_label: str = "",
+) -> list[Axes]:
+    decomposition: DecomposeResult = seasonal_decompose(series, model="add")
+    components: dict = {
+        "observed": series,
+        "trend": decomposition.trend,
+        "seasonal": decomposition.seasonal,
+        "residual": decomposition.resid,
+    }
+    rows: int = len(components)
+    fig: Figure
+    axs: list[Axes]
+    fig, axs = subplots(rows, 1, figsize=(3 * HEIGHT, rows * HEIGHT))
+    fig.suptitle(f"{title}")
+    i: int = 0
+    for key in components:
+        set_chart_labels(axs[i], title=key, xlabel=x_label, ylabel=y_label)
+        axs[i].plot(components[key])
+        i += 1
+    return axs
+
+
 print("data_functions loaded")
 
