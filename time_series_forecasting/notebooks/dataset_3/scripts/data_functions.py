@@ -1575,5 +1575,40 @@ def plot_components(
     return axs
 
 
+from dslabs_functions import plot_multiline_chart
+
+
+def get_lagged_series(series: Series, max_lag: int, delta: int = 1):
+    lagged_series: dict = {"original": series, "lag 1": series.shift(1)}
+    for i in range(delta, max_lag + 1, delta):
+        lagged_series[f"lag {i}"] = series.shift(i)
+    return lagged_series
+
+
+
+
+from matplotlib.pyplot import setp
+from matplotlib.gridspec import GridSpec
+
+
+def autocorrelation_study(series: Series, max_lag: int, delta: int = 1):
+    k: int = int(max_lag / delta)
+    fig = figure(figsize=(4 * HEIGHT, 2 * HEIGHT), constrained_layout=True)
+    gs = GridSpec(2, k, figure=fig)
+
+    series_values: list = series.tolist()
+    for i in range(1, k + 1):
+        ax = fig.add_subplot(gs[0, i - 1])
+        lag = i * delta
+        ax.scatter(series.shift(lag).tolist(), series_values)
+        ax.set_xlabel(f"lag {lag}")
+        ax.set_ylabel("original")
+    ax = fig.add_subplot(gs[1, :])
+    ax.acorr(series, maxlags=max_lag)
+    ax.set_title("Autocorrelation")
+    ax.set_xlabel("Lags")
+    return
+
+
 print("data_functions loaded")
 
