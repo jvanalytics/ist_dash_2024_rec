@@ -26,3 +26,4 @@
 - https://www.kaggle.com/datasets/ihelon/coffee-sales
 - https://www.kaggle.com/datasets/rohitsahoo/sales-forecasting
 - https://www.kaggle.com/datasets/tevecsystems/retail-sales-forecasting/data
+- https://www.kaggle.com/datasets/zahraaalaatageldein/sales-for-furniture-store/data
