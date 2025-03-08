@@ -283,56 +283,26 @@ def plot_multi_scatters_chart(
 # ---------------------------------------
 
 
-#def get_variable_types(df: DataFrame) -> dict[str, list]:
-#   variable_types: dict = {"numeric": [], "binary": [], "date": [], "symbolic": []}
-#
-#   nr_values: Series = df.nunique(axis=0, dropna=True)
-#   for c in df.columns:
-#       if 2 == nr_values[c]:
-#           variable_types["binary"].append(c)
-#           df[c].astype("bool")
-#       else:
-#           try:
-#               to_numeric(df[c], errors="raise")
-#               variable_types["numeric"].append(c)
-#           except ValueError:
-#               try:
-#                   df[c] = to_datetime(df[c], errors="raise")
-#                   variable_types["date"].append(c)
-#               except ValueError:
-#                   variable_types["symbolic"].append(c)
-#
-#   return variable_types
-
-
-
-#new version fixed
-from pandas import Series, DataFrame, to_numeric, to_datetime
-
 def get_variable_types(df: DataFrame) -> dict[str, list]:
     variable_types: dict = {"numeric": [], "binary": [], "date": [], "symbolic": []}
 
     nr_values: Series = df.nunique(axis=0, dropna=True)
-    
     for c in df.columns:
-        if 2 == nr_values[c]:  # Colunas com exatamente 2 valores únicos
+        if 2 == nr_values[c]:
             variable_types["binary"].append(c)
+            df[c].astype("bool")
         else:
-            if df[c].dtype == 'datetime64[ns, UTC]':  # Verifica se a coluna já é datetime
-                variable_types["date"].append(c)
-            else:
+            try:
+                to_numeric(df[c], errors="raise")
+                variable_types["numeric"].append(c)
+            except ValueError:
                 try:
-                    df[c] = to_numeric(df[c], errors="raise")
-                    variable_types["numeric"].append(c)
+                    df[c] = to_datetime(df[c], errors="raise")
+                    variable_types["date"].append(c)
                 except ValueError:
-                    try:
-                        df[c] = to_datetime(df[c], errors="raise")
-                        variable_types["date"].append(c)
-                    except ValueError:
-                        variable_types["symbolic"].append(c)
+                    variable_types["symbolic"].append(c)
 
     return variable_types
-
 
 
 def determine_outlier_thresholds_for_var(
@@ -510,50 +480,12 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
     return df
 
 
-
-def select_low_variance_variables(
-    data: DataFrame, 
-    max_threshold: float, 
-    target: str = "is_purchase",
-    min_features_to_keep: int = 10,  # Minimum number of features to retain
-    exclude: list[str] = ["day"]  # Columns to exclude
-) -> list:
-    # Exclude the columns that should not be considered (like 'day_of_month')
-    data_filtered = df.drop(columns=exclude, errors='ignore')
-    
-    summary5: DataFrame = data_filtered.describe()
-
-    # Calculate variance (standard deviation squared)
-    variances = summary5.loc["std"] ** 2
-
-    # Drop features with variance below the max_threshold
-    vars2drop: Index[str] = summary5.columns[variances < max_threshold]
-
-    # Ensure that the target column is not dropped
-    if target in vars2drop:
-        vars2drop = vars2drop.drop(target)
-
-    # Safeguard: Ensure a minimum number of features are retained
-    remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
-    if remaining_features < min_features_to_keep:
-        print(f"Threshold too strict, keeping at least {min_features_to_keep} features.")
-        vars2drop = summary5.columns[variances < max_threshold]
-        remaining_features = data_filtered.drop(vars2drop, axis=1).shape[1]
-
-        # If still too few features, skip dropping
-        if remaining_features < min_features_to_keep:
-            print(f"Warning: Dropping too many features even with adjusted threshold.")
-            vars2drop = Index([])  # Don't drop any variables
-
-    print(f"Variance threshold: {max_threshold}, Remaining features: {remaining_features}")
-    print(f"Variables to drop: {list(vars2drop)}")
-
-    # Return the columns to drop, while preserving the excluded ones
+def select_low_variance_variables(data: DataFrame, max_threshold: float, target: str = "class") -> list:
+    summary5: DataFrame = data.describe()
+    vars2drop: Index[str] = summary5.columns[summary5.loc["std"] * summary5.loc["std"] < max_threshold]
+    vars2drop = vars2drop.drop(target) if target in vars2drop else vars2drop
     return list(vars2drop.values)
 
-
-from math import ceil
-from matplotlib.pyplot import savefig, show, figure
 
 def study_variance_for_feature_selection(
     train: DataFrame,
@@ -563,74 +495,26 @@ def study_variance_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
-    min_features_to_keep: int = 5,  # Minimum features safeguard
-    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
-    # Generate the range of variance thresholds to test
-    options: list[float] = [
-        round(i * lag, 3) for i in range(1, ceil(max_threshold / lag + lag))
-    ]
-    
+    options: list[float] = [round(i * lag, 3) for i in range(1, ceil(max_threshold / lag + lag))]
     results: dict[str, list] = {"NB": [], "KNN": []}
     summary5: DataFrame = train.describe()
-    
     for thresh in options:
-        print(f"Testing threshold: {thresh}")
-        
-        # Calculate variance and select variables to drop
-        variances = summary5.loc["std"] ** 2
-        vars2drop: Index[str] = summary5.columns[variances < thresh]
+        vars2drop: Index[str] = summary5.columns[summary5.loc["std"] * summary5.loc["std"] < thresh]
+        vars2drop = vars2drop.drop(target) if target in vars2drop else vars2drop
 
-        # Ensure we don't drop the target or excluded columns
-        drop_cols = [target] + exclude
-        vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
-
-        # Safeguard: Ensure we don't drop too many features
-        remaining_features = train.drop(vars2drop, axis=1).shape[1]
-        if remaining_features < min_features_to_keep:
-            print(f"Threshold too strict at {thresh}, adjusting to retain at least {min_features_to_keep} features.")
-            # Adjust threshold dynamically
-            vars2drop = summary5.columns[variances < thresh / 2]
-            vars2drop = vars2drop.difference(drop_cols)  # Proper exclusion
-            remaining_features = train.drop(vars2drop, axis=1).shape[1]
-            if remaining_features < min_features_to_keep:
-                print(f"Still too strict, keeping all variables for this threshold.")
-                vars2drop = Index([])  # Don't drop any variables
-
-        print(f"Dropping variables: {list(vars2drop)}")
-        print(f"Remaining features after drop: {remaining_features}")
-
-        # Drop the low variance variables from train and test sets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
+        eval: dict[str, list] | None = evaluate_approach(train_copy, test_copy, target=target, metric=metric)
+        if eval is not None:
+            results["NB"].append(eval[metric][0])
+            results["KNN"].append(eval[metric][1])
 
-        # Evaluate the approach using the current feature set
-        eval: dict[str, list] | None = evaluate_approach(
-            train_copy, test_copy, target=target, metric=metric
-        )
-
-        # Check if evaluation returned results
-        if eval:
-            print(f"Evaluation results at threshold {thresh}: {eval}")
-            if metric in eval:
-                print(f"Evaluation for {metric}: {eval[metric]}")
-                results["NB"].append(eval[metric][0])
-                results["KNN"].append(eval[metric][1])
-            else:
-                print(f"Metric '{metric}' not found in evaluation results at threshold {thresh}.")
-                results["NB"].append(None)
-                results["KNN"].append(None)
-        else:
-            print(f"Evaluation failed or returned empty at threshold {thresh}.")
-            results["NB"].append(None)
-            results["KNN"].append(None)
-
-    # Plotting the results of the variance study
     plot_multiline_chart(
         options,
         results,
         title=f"{file_tag} variance study ({metric})",
-        xlabel="Variance threshold",
+        xlabel="variance threshold",
         ylabel=metric,
         percentage=True,
     )
@@ -638,30 +522,19 @@ def study_variance_for_feature_selection(
     return results
 
 
-def select_redundant_variables(
-    data: DataFrame, 
-    min_threshold: float = 0.90, 
-    target: str = "class", 
-    exclude: list[str] = ["day_of_year"]  # Columns to exclude from redundancy check
-) -> list:
-    # Exclude the columns that should not be considered (like 'day_of_month')
-    data_filtered = data.drop(columns=[target] + exclude, errors='ignore')
-
-    # Calculate the correlation matrix
-    corr_matrix: DataFrame = abs(data_filtered.corr())
+def select_redundant_variables(data: DataFrame, min_threshold: float = 0.90, target: str = "class") -> list:
+    df: DataFrame = data.drop(target, axis=1, inplace=False)
+    corr_matrix: DataFrame = abs(df.corr())
     variables: Index[str] = corr_matrix.columns
     vars2drop: list = []
-
-    # Iterate over the variables and check correlations
     for v1 in variables:
         vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= min_threshold]
-        vars_corr.drop(v1, inplace=True)  # Remove self-correlation
-        if len(vars_corr) > 1:  # Check if more than one correlated variable
+        vars_corr.drop(v1, inplace=True)
+        if len(vars_corr) > 1:
             lst_corr = list(vars_corr.index)
             for v2 in lst_corr:
                 if v2 not in vars2drop:
                     vars2drop.append(v2)
-
     return vars2drop
 
 
@@ -673,74 +546,31 @@ def study_redundancy_for_feature_selection(
     lag: float = 0.05,
     metric: str = "accuracy",
     file_tag: str = "",
-    exclude: list[str] = ["day_of_year"]  # Columns to exclude from study
 ) -> dict:
-    # Generate the range of redundancy thresholds to test
-    options: list[float] = [
-        round(min_threshold + i * lag, 3)
-        for i in range(ceil((1 - min_threshold) / lag) + 1)
-    ]
+    options: list[float] = [round(min_threshold + i * lag, 3) for i in range(ceil((1 - min_threshold) / lag) + 1)]
 
-    # Ensure 'target' and 'exclude' columns are present and drop them for correlation calculation
-    drop_cols = [target] + exclude
-    df: DataFrame = train.drop(drop_cols, axis=1, inplace=False)
-    print(f"Columns in the train dataset: {df.columns.tolist()}")  # Debugging step
-
-    # Calculate the correlation matrix
+    df: DataFrame = train.drop(target, axis=1, inplace=False)
     corr_matrix: DataFrame = abs(df.corr())
     variables: Index[str] = corr_matrix.columns
-    print(f"Variables considered for correlation: {variables.tolist()}")  # Debugging step
-
     results: dict[str, list] = {"NB": [], "KNN": []}
-    
     for thresh in options:
         vars2drop: list = []
-        
-        # Loop through the variables to identify correlated features
         for v1 in variables:
-            # Get features correlated with the current variable
             vars_corr: Series = (corr_matrix[v1]).loc[corr_matrix[v1] >= thresh]
-            
-            # Check if the current variable is in the correlation list before trying to drop it
-            if v1 in vars_corr:
-                vars_corr.drop(v1, inplace=True)
-            
-            # If other variables are highly correlated with v1, consider them for removal
+            vars_corr.drop(v1, inplace=True)
             if len(vars_corr) > 1:
                 lst_corr = list(vars_corr.index)
                 for v2 in lst_corr:
                     if v2 not in vars2drop:
                         vars2drop.append(v2)
 
-        print(f"Variables to drop at threshold {thresh}: {vars2drop}")  # Debugging step
-        
-        # Ensure that none of the columns in 'exclude' are dropped
-        vars2drop = [v for v in vars2drop if v not in exclude]
-        
-        # Drop the selected redundant variables from train and test datasets
         train_copy: DataFrame = train.drop(vars2drop, axis=1, inplace=False)
         test_copy: DataFrame = test.drop(vars2drop, axis=1, inplace=False)
-
-        # Evaluate the approach using the current feature set
         eval: dict | None = evaluate_approach(train_copy, test_copy, target=target, metric=metric)
+        if eval is not None:
+            results["NB"].append(eval[metric][0])
+            results["KNN"].append(eval[metric][1])
 
-        # Check if evaluation returned results
-        if eval:
-            print(f"Evaluation results at threshold {thresh}: {eval}")
-            if metric in eval:
-                print(f"Evaluation for {metric}: {eval[metric]}")
-                results["NB"].append(eval[metric][0])
-                results["KNN"].append(eval[metric][1])
-            else:
-                print(f"Metric '{metric}' not found in evaluation results at threshold {thresh}.")
-                results["NB"].append(None)
-                results["KNN"].append(None)
-        else:
-            print(f"Evaluation failed or returned empty at threshold {thresh}.")
-            results["NB"].append(None)
-            results["KNN"].append(None)
-
-    # Optional: Save or plot the results after evaluation
     plot_multiline_chart(
         options,
         results,
@@ -751,6 +581,7 @@ def study_redundancy_for_feature_selection(
     )
     savefig(f"images/{file_tag}_fs_redundancy_{metric}_study.png")
     return results
+
 
 def apply_feature_selection(
     train: DataFrame,
@@ -773,7 +604,6 @@ def apply_feature_selection(
 
 DELTA_IMPROVE: float = 0.001
 
-from sklearn.metrics import fbeta_score
 
 CLASS_EVAL_METRICS: dict[str, Callable] = {
     "accuracy": accuracy_score,
@@ -781,17 +611,17 @@ CLASS_EVAL_METRICS: dict[str, Callable] = {
     "precision": precision_score,
     "auc": roc_auc_score,
     "f1": f1_score,
-    "f2": lambda y_true, y_pred: fbeta_score(y_true, y_pred, beta=2),  # Adding F2 score   
 }
 
 
 def run_NB(trnX, trnY, tstX, tstY, metric: str = "accuracy") -> dict[str, float]:
-    estimators: dict[str, GaussianNB | BernoulliNB] = {
+    estimators: dict[str, GaussianNB | MultinomialNB | BernoulliNB] = {
         "GaussianNB": GaussianNB(),
-        # "MultinomialNB": MultinomialNB(), # removed since we have negative values. only works with positive
+        #Removing this option because MultinomialNB doen's work with negative values. And we have these values for time columns
+        #"MultinomialNB": MultinomialNB(),
         "BernoulliNB": BernoulliNB(),
     }
-    best_model: GaussianNB | BernoulliNB = None  # type: ignore
+    best_model: GaussianNB | MultinomialNB | BernoulliNB = None  # type: ignore
     best_performance: float = 0.0
     eval: dict[str, float] = {}
 
@@ -846,67 +676,19 @@ def evaluate_approach(
     return eval
 
 
-
-
-from typing import Union
-import pandas as pd
-from pandas import DataFrame
-from numpy import array, ndarray
-
-# adapted to read from memory
 def read_train_test_from_files(
-    train_fn: Union[str, DataFrame], test_fn: Union[str, DataFrame], target: str = "class"
+    train_fn: str, test_fn: str, target: str = "class"
 ) -> tuple[ndarray, ndarray, array, array, list, list]:
-    """
-    Reads training and test data from either CSV files or DataFrames, and splits
-    the data into features and target.
-
-    Parameters:
-    -----------
-    train_fn : Union[str, DataFrame]
-        File path to the training CSV or a DataFrame object.
-    test_fn : Union[str, DataFrame]
-        File path to the test CSV or a DataFrame object.
-    target : str, default="class"
-        The name of the target column.
-
-    Returns:
-    --------
-    tuple : (trnX, tstX, trnY, tstY, labels, features)
-        - trnX: Training feature set as ndarray.
-        - tstX: Test feature set as ndarray.
-        - trnY: Training labels as array.
-        - tstY: Test labels as array.
-        - labels: List of unique target values.
-        - features: List of feature names (column names).
-    """
-    # Check if train_fn is a string (file path) or DataFrame, and handle accordingly
-    if isinstance(train_fn, str):
-        train: DataFrame = pd.read_csv(train_fn, index_col=None)
-    else:
-        train: DataFrame = train_fn.copy()  # Use the provided DataFrame directly
-
-    # Extract and sort unique target labels
+    train: DataFrame = read_csv(train_fn, index_col=None)
     labels: list = list(train[target].unique())
     labels.sort()
-
-    # Separate features (X) and target (Y) for training data
     trnY: array = train.pop(target).to_list()
     trnX: ndarray = train.values
 
-    # Check if test_fn is a string (file path) or DataFrame, and handle accordingly
-    if isinstance(test_fn, str):
-        test: DataFrame = pd.read_csv(test_fn, index_col=None)
-    else:
-        test: DataFrame = test_fn.copy()  # Use the provided DataFrame directly
-
-    # Separate features (X) and target (Y) for test data
+    test: DataFrame = read_csv(test_fn, index_col=None)
     tstY: array = test.pop(target).to_list()
     tstX: ndarray = test.values
-
     return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
-
-
 
 
 def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
@@ -927,44 +709,6 @@ def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes 
     for i, j in product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
         ax.text(j, i, format(cnf_matrix[i, j], "d"), color="y", horizontalalignment="center")
     return ax
-
-
-
-
-
-#def read_train_test_from_files(
-#    train_fn: str, test_fn: str, target: str = "class"
-#) -> tuple[ndarray, ndarray, array, array, list, list]:
-#    train: DataFrame = read_csv(train_fn, index_col=None)
-#    labels: list = list(train[target].unique())
-#    labels.sort()
-#    trnY: array = train.pop(target).to_list()
-#    trnX: ndarray = train.values
-#
-#    test: DataFrame = read_csv(test_fn, index_col=None)
-#    tstY: array = test.pop(target).to_list()
-#    tstX: ndarray = test.values
-#    return trnX, tstX, trnY, tstY, labels, train.columns.to_list()
-#
-#
-#def plot_confusion_matrix(cnf_matrix: ndarray, classes_names: ndarray, ax: Axes = None) -> Axes:  # type: ignore
-#    if ax is None:
-#        ax = gca()
-#    title = "Confusion matrix"
-#    set_printoptions(precision=2)
-#    tick_marks: ndarray = arange(0, len(classes_names), 1)
-#    ax.set_title(title)
-#    ax.set_ylabel("True label")
-#    ax.set_xlabel("Predicted label")
-#    ax.set_xticks(tick_marks)
-#    ax.set_yticks(tick_marks)
-#    ax.set_xticklabels(classes_names)
-#    ax.set_yticklabels(classes_names)
-#    ax.imshow(cnf_matrix, interpolation="nearest", cmap=cmap_blues)
-#
-#    for i, j in product(range(cnf_matrix.shape[0]), range(cnf_matrix.shape[1])):
-#        ax.text(j, i, format(cnf_matrix[i, j], "d"), color="y", horizontalalignment="center")
-#    return ax
 
 
 def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: str = "class") -> Axes:  # type: ignore
@@ -999,7 +743,7 @@ def plot_roc_chart(tstY: ndarray, predictions: dict, ax: Axes = None, target: st
     return ax
 
 
-def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray, file_tag ='') -> ndarray:
+def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarray) -> ndarray:
     evaluation: dict = {}
     for key in CLASS_EVAL_METRICS:
         evaluation[key] = [
@@ -1011,17 +755,11 @@ def plot_evaluation_results(model, trn_y, prd_trn, tst_y, prd_tst, labels: ndarr
     fig: Figure
     axs: ndarray
     fig, axs = subplots(1, 2, figsize=(2 * HEIGHT, HEIGHT))
-    
-    # Título do gráfico com o filetag
-    fig.suptitle(f'{file_tag} - Best {model["metric"]} for {model["name"]} {params_st}')
-    
-    # Gráfico de barras para métricas de treino e teste
+    fig.suptitle(f'Best {model["metric"]} for {model["name"]} {params_st}')
     plot_multibar_chart(["Train", "Test"], evaluation, ax=axs[0], percentage=True)
 
-    # Matriz de confusão para o teste
     cnf_mtx_tst: ndarray = confusion_matrix(tst_y, prd_tst, labels=labels)
     plot_confusion_matrix(cnf_mtx_tst, labels, ax=axs[1])
-    
     return axs
 
 
@@ -1165,4 +903,3 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     return axs
 
-print("dslabs_functions lodaded")
