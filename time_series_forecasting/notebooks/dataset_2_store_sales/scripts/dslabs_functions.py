@@ -3,6 +3,7 @@ file:       dslabs_functions.py
 version:    2023.1
 author:     Claudia Antunes
 """
+import numpy
 from math import pi, sin, cos, ceil, sqrt
 from itertools import product
 from datetime import datetime
@@ -111,6 +112,10 @@ def plot_line_chart(
 ) -> Axes:
     if ax is None:
         ax = gca()
+
+    print("yvalues sample:", yvalues[:5])  
+    print("Types:", [type(y) for y in yvalues[:5]])
+
     ax = set_chart_labels(ax=ax, title=title, xlabel=xlabel, ylabel=ylabel)
     ax = set_chart_xticks(xvalues, ax, percentage=percentage)
     if any(y < 0 for y in yvalues) and percentage:
