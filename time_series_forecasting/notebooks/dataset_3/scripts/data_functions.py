@@ -351,11 +351,28 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
             lst_dfs.append(tmp_bool)
         df = concat(lst_dfs, axis=1)
     else:
-        imp = KNNImputer(n_neighbors=5)
+        imp = KNNImputer(n_neighbors=10)
         imp.fit(data)
         ar: ndarray = imp.transform(data)
         df = DataFrame(ar, columns=data.columns, index=data.index)
     return df
+
+
+
+def remove_columns_with_na(df):
+    df_copy = df.copy()
+    df_cols = df_copy.columns
+
+    # Identify columns with any missing values
+    cols_with_na = [col for col in df_cols if df_copy[col].isna().any()]
+
+    # Print the list of columns that have missing values
+    print(f"Columns with missing values: {cols_with_na}")
+
+    # Remove columns that have any missing values
+    df_copy = df_copy.drop(columns=cols_with_na)
+
+    return df_copy
 
 
 
@@ -1612,14 +1629,6 @@ def autocorrelation_study(series: Series, max_lag: int, delta: int = 1):
 
 
 
-def series_train_test_split(data: Series, trn_pct: float = 0.90) -> tuple[Series, Series]:
-    trn_size: int = int(len(data) * trn_pct)
-    df_cp: Series = data.copy()
-    train: Series = df_cp.iloc[:trn_size, :]
-    test: Series = df_cp.iloc[trn_size:]
-    return train, test
-
-
 from matplotlib.axes import Axes
 from matplotlib.pyplot import subplots, savefig
 from dslabs_functions import PAST_COLOR, FUTURE_COLOR, PRED_PAST_COLOR, PRED_FUTURE_COLOR, HEIGHT
@@ -1667,25 +1676,70 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
     return axs
 
 
+from sklearn.model_selection import train_test_split
+
+
+# Define the series_train_test_split function
+def series_train_test_split(series, trn_pct=0.90):
+	train_size = int(len(series) * trn_pct)
+	train, test = series[:train_size], series[train_size:]
+	return train, test
+
 
 from sklearn.base import RegressorMixin
 
+# Define the SimpleAvgRegressor class
+class SimpleAvgRegressor:
+	def fit(self, series):
+		self.mean = series.mean()
+	
+	def predict(self, series):
+		return Series([self.mean] * len(series), index=series.index)
 
-class SimpleAvgRegressor(RegressorMixin):
-    def __init__(self):
-        super().__init__()
-        self.mean: float = 0.0
-        return
 
-    def fit(self, X: Series):
-        self.mean = X.mean()
-        return
 
-    def predict(self, X: Series) -> Series:
-        prd: list = len(X) * [self.mean]
-        prd_series: Series = Series(prd)
-        prd_series.index = X.index
-        return prd_series
+from statsmodels.tsa.arima.model import ARIMA
+
+def fill_missing_values_arima(df, order=(5, 1, 0), freq='D'):
+    """
+    Fill missing values in a DataFrame using ARIMA.
+
+    Args:
+    df (pd.DataFrame): The DataFrame with missing values.
+    order (tuple): The (p, d, q) order of the ARIMA model.
+    freq (str): The frequency of the time series data.
+
+    Returns:
+    pd.DataFrame: The DataFrame with missing values filled.
+    """
+    df_filled = df.copy()
+    
+    for column in df.columns:
+        series = df[column]
+        
+        # Check if there are missing values
+        if series.isnull().sum() > 0:
+            print(f"Filling missing values for column: {column}")
+            
+            # Ensure the series has the correct frequency
+            series = series.asfreq(freq)
+
+            # Fit an ARIMA model
+            model = ARIMA(series, order=order)
+            model_fit = model.fit()
+
+            # Predict the entire series
+            predictions = model_fit.predict(start=0, end=len(series) - 1)
+
+            # Fill missing values with predictions
+            series_filled = series.copy()
+            series_filled[series.isnull()] = predictions[series.isnull()]
+
+            # Update the filled series in the DataFrame
+            df_filled[column] = series_filled
+
+    return df_filled
+
 
 print("data_functions loaded")
 

@@ -35,7 +35,7 @@ from config import (
     FILL_COLOR,
     PAST_COLOR,
     FUTURE_COLOR,
-    # PRED_PAST_COLOR,
+    PRED_PAST_COLOR,
     PRED_FUTURE_COLOR,
     cmap_blues,
 )
