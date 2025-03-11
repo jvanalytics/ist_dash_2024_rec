@@ -1679,12 +1679,11 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 from sklearn.model_selection import train_test_split
 
 
-# Define the series_train_test_split function
+# Function to split the series into train and test sets
 def series_train_test_split(series, trn_pct=0.90):
-	train_size = int(len(series) * trn_pct)
-	train, test = series[:train_size], series[train_size:]
-	return train, test
-
+    train_size = int(len(series) * trn_pct)
+    train, test = series[:train_size], series[train_size:]
+    return train, test
 
 from sklearn.base import RegressorMixin
 
