@@ -1044,9 +1044,17 @@ def ts_aggregation_by(
 def series_train_test_split(data: Series, trn_pct: float = 0.90) -> tuple[Series, Series]:
     trn_size: int = int(len(data) * trn_pct)
     df_cp: Series = data.copy()
-    train: Series = df_cp.iloc[:trn_size, 0]
-    test: Series = df_cp.iloc[trn_size:, 0]
+
+    # If data is a DataFrame, select the first column
+    if isinstance(df_cp, pd.DataFrame):
+        df_cp = df_cp.iloc[:, 0]  # Select first column to ensure it's a Series
+
+    train: Series = df_cp.iloc[:trn_size]  
+    test: Series = df_cp.iloc[trn_size:]  
+
     return train, test
+
+
 
 def dataframe_temporal_train_test_split(data: DataFrame, trn_pct: float = 0.90) -> tuple[DataFrame, DataFrame]:
     trn_size: int = int(len(data) * trn_pct)
@@ -1103,7 +1111,8 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     # print(eval1, eval2)
     fig, axs = subplots(1, 2, figsize=(1.5 * HEIGHT, 0.75 * HEIGHT), squeeze=True)
-    fig.suptitle(title)
+    fig.suptitle(title, fontsize = 12)
+    fig.subplots_adjust(top=0.80)  # Reduce the space to make room for the title
     plot_multibar_chart(["train", "test"], ev1, ax=axs[0], title="Scale-dependent error", percentage=False)
     plot_multibar_chart(["train", "test"], ev2, ax=axs[1], title="Percentage error", percentage=True)
 
