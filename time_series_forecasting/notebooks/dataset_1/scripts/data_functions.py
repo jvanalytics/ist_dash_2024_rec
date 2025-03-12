@@ -211,8 +211,6 @@ def sheet_to_dict(excel_file, sheet_name):
     return mapping_dict
 
 
-
-
 from numpy import ndarray
 from matplotlib.figure import Figure
 from matplotlib.pyplot import subplots, savefig, show
