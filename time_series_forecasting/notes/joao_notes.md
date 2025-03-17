@@ -214,3 +214,11 @@ To detect stationarity:
 
 By ensuring a time series is stationary, you can apply various time series forecasting models more effectively, as many models assume stationarity in the data.
 
+
+
+# Resources on Time Series
+
+## Time Series Decomposition and patterns
+- https://www.youtube.com/watch?v=7UPgcI0ebi4
+- https://www.youtube.com/watch?v=_z-a6WoNC2s
+- https://www.youtube.com/watch?v=ca0rDWo7IpI
