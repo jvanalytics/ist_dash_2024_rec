@@ -164,3 +164,61 @@ c) Se 17.5 fosse o valor mínimo para T1 em todo o conjunto de treino, então a 
 cada segmento descrito por T1.
 d) Se pretendesse treinar um perceptrão multi-camada (MLP) sobre segmentos de três instantes de tempo de
 uma série temporal, seriam usadas obrigatoriamente três camadas escondidas (hidden layers)
+
+
+
+
+# Estudo Exame
+
+
+### Slides Times series
+https://drive.google.com/file/d/1hg2e2iy3uYYtoV4u0OGaOf8VrLHKNVIz/view
+
+
+### youtube video
+https://www.youtube.com/watch?v=7UPgcI0ebi4
+
+### How to Detect Seasonality, Trend, and Cyclic Patterns in Time Series Analysis
+
+
+#### Seasonality
+Seasonality refers to periodic fluctuations in a time series that occur at regular intervals, such as daily, monthly, or yearly. To detect seasonality:
+- **Visual Inspection**: Plot the time series and look for repeating patterns at regular intervals.
+- **Autocorrelation Function (ACF)**: Use ACF plots to identify significant spikes at specific lags that correspond to the seasonal period.
+- **Seasonal Decomposition**: Apply methods like STL (Seasonal and Trend decomposition using Loess) to separate the seasonal component from the trend and residuals.
+
+#### Trend
+Trend indicates the long-term movement or direction in the time series data. To detect trends:
+- **Visual Inspection**: Plot the time series and observe the overall direction (upward, downward, or constant).
+- **Moving Averages**: Apply moving averages to smooth out short-term fluctuations and highlight the long-term trend.
+- **Regression Analysis**: Fit a regression line to the time series data to quantify the trend.
+
+#### Cyclic Patterns
+Cyclic patterns are long-term oscillations that are not of fixed period, unlike seasonality. To detect cyclic patterns:
+- **Visual Inspection**: Plot the time series and look for long-term cycles that do not follow a fixed period.
+- **Fourier Transform**: Use Fourier analysis to identify dominant frequencies in the time series that correspond to cyclic behavior.
+- **Spectral Analysis**: Apply spectral density estimation to detect cycles with varying periods.
+
+By using these methods, you can effectively identify and analyze seasonality, trend, and cyclic patterns in time series data.
+
+#### Stationary
+
+#### Stationary Time Series
+A stationary time series is one whose statistical properties such as mean, variance, and autocorrelation are constant over time. In other words, the series does not exhibit trends, seasonal effects, or other structures that change over time.
+
+To detect stationarity:
+- **Visual Inspection**: Plot the time series and look for constant mean and variance over time.
+- **Summary Statistics**: Calculate and compare the mean and variance over different time intervals.
+- **Autocorrelation Function (ACF)**: Check if the ACF plot shows a rapid decay, indicating stationarity.
+- **Statistical Tests**: Apply tests like the Augmented Dickey-Fuller (ADF) test or the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test to statistically determine if a time series is stationary.
+
+By ensuring a time series is stationary, you can apply various time series forecasting models more effectively, as many models assume stationarity in the data.
+
+
+
+# Resources on Time Series
+
+## Time Series Decomposition and patterns
+- https://www.youtube.com/watch?v=7UPgcI0ebi4
+- https://www.youtube.com/watch?v=_z-a6WoNC2s
+- https://www.youtube.com/watch?v=ca0rDWo7IpI
