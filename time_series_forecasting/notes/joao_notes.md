@@ -222,3 +222,9 @@ By ensuring a time series is stationary, you can apply various time series forec
 - https://www.youtube.com/watch?v=7UPgcI0ebi4
 - https://www.youtube.com/watch?v=_z-a6WoNC2s
 - https://www.youtube.com/watch?v=ca0rDWo7IpI
+
+
+# LSTM
+- https://www.youtube.com/watch?v=94PlBzgeq90
+- https://www.youtube.com/watch?v=b61DPVFX03I
+- https://www.youtube.com/watch?v=S8tpSG6Q2H0
