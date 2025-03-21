@@ -983,41 +983,33 @@ def drop_outliers(df,summary5_df,outlier_var):
 
 from sklearn.preprocessing import StandardScaler
 
-def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+def apply_standard_scaler(df: DataFrame) -> DataFrame:
+    """
+    Apply StandardScaler to the entire DataFrame.
 
-    df_copy=df.copy()
+    Args:
+    df (pd.DataFrame): The DataFrame to scale.
+
+    Returns:
+    pd.DataFrame: The scaled DataFrame.
+    """
+    df_copy = df.copy()
     
-    # this script is available in data_functions originally from DSLabs site in Scaling chapter
-    
-    # Separate the target column from the features
-    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
-    
-    # Apply scaling to only the feature columns
-    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    # Apply scaling to the entire DataFrame
+    transf = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
     df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
-    
-    # Add the target column back to the scaled dataframe
-    df_zscore[target] = target_data
 
     return df_zscore
 
 
 from sklearn.preprocessing import MinMaxScaler
-def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
 
-    df_copy=df.copy()
+def apply_min_max_scaler(df: DataFrame) -> DataFrame:
+    df_copy = df.copy()
     
-    # this script is available in data_functions originally from DSLabs site in Scaling chapter
-    
-    # Separate the target column from the features
-    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
-    
-    # Apply MinMax scaling to the feature columns only
-    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    # Apply MinMax scaling to the entire DataFrame including the target column
+    transf = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
     df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
-    
-    # Add the target column back to the scaled dataframe
-    df_minmax[target] = target_data  # Add the unscaled target column back
 
     return df_minmax
 
