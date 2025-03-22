@@ -1200,116 +1200,116 @@ def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
 
 
 import os
-from openpyxl import load_workbook
+# from openpyxl import load_workbook
 
 
-# Function to append distinct combinations of selected columns into sheets in an Excel file
-def append_columns_to_excel(df, columns_dict, output_file):
-    """
-    Append distinct combinations of selected columns into separate sheets in an existing Excel file,
-    with the columns ordered by their names for easier hierarchical encoding and add an empty encoding column.
+# # Function to append distinct combinations of selected columns into sheets in an Excel file
+# def append_columns_to_excel(df, columns_dict, output_file):
+#     """
+#     Append distinct combinations of selected columns into separate sheets in an existing Excel file,
+#     with the columns ordered by their names for easier hierarchical encoding and add an empty encoding column.
 
-    Args:
-    df (pd.DataFrame): The DataFrame containing the columns to save.
-    columns_dict (dict): Dictionary where keys are sheet names, and values are lists of column names to include.
-    output_file (str): The path of the Excel file to save the sheets.
+#     Args:
+#     df (pd.DataFrame): The DataFrame containing the columns to save.
+#     columns_dict (dict): Dictionary where keys are sheet names, and values are lists of column names to include.
+#     output_file (str): The path of the Excel file to save the sheets.
 
-    Returns:
-    None
-    """
-    # Check if the file exists and is a valid Excel file
-    if os.path.exists(output_file):
-        try:
-            # Try to load the existing workbook
-            with pd.ExcelWriter(output_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                writer.book = load_workbook(output_file)
+#     Returns:
+#     None
+#     """
+#     # Check if the file exists and is a valid Excel file
+#     if os.path.exists(output_file):
+#         try:
+#             # Try to load the existing workbook
+#             with pd.ExcelWriter(output_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+#                 writer.book = load_workbook(output_file)
                 
-                # Loop over each sheet name and corresponding list of columns
-                for sheet_name, columns in columns_dict.items():
-                    # Check if all the specified columns exist in the DataFrame
-                    missing_columns = [col for col in columns if col not in df.columns]
-                    if missing_columns:
-                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                        continue
+#                 # Loop over each sheet name and corresponding list of columns
+#                 for sheet_name, columns in columns_dict.items():
+#                     # Check if all the specified columns exist in the DataFrame
+#                     missing_columns = [col for col in columns if col not in df.columns]
+#                     if missing_columns:
+#                         print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                         continue
 
-                    # Get distinct combinations of the selected columns
-                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                     # Get distinct combinations of the selected columns
+#                     distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                    # Convert columns to strings temporarily for sorting to avoid float-string comparison errors
-                    distinct_values = distinct_values.astype(str)
+#                     # Convert columns to strings temporarily for sorting to avoid float-string comparison errors
+#                     distinct_values = distinct_values.astype(str)
 
-                    # Sort distinct values by the specified columns for hierarchical grouping
-                    distinct_values.sort_values(by=columns, inplace=True)
+#                     # Sort distinct values by the specified columns for hierarchical grouping
+#                     distinct_values.sort_values(by=columns, inplace=True)
 
-                    # Add an empty encoding column for each column in the DataFrame
-                    for col in columns:
-                        distinct_values[f'{col}_enc'] = pd.NA
+#                     # Add an empty encoding column for each column in the DataFrame
+#                     for col in columns:
+#                         distinct_values[f'{col}_enc'] = pd.NA
 
-                    # Write distinct values to a new sheet named after the sheet_name
-                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                     # Write distinct values to a new sheet named after the sheet_name
+#                     distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
                     
-        except Exception as e:
-            print(f"Error: {e}")
-            print("The file might be corrupt or invalid. Creating a new file.")
-            # Create a new file if loading fails
-            with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
-                for sheet_name, columns in columns_dict.items():
-                    missing_columns = [col for col in columns if col not in df.columns]
-                    if missing_columns:
-                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                        continue
+#         except Exception as e:
+#             print(f"Error: {e}")
+#             print("The file might be corrupt or invalid. Creating a new file.")
+#             # Create a new file if loading fails
+#             with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+#                 for sheet_name, columns in columns_dict.items():
+#                     missing_columns = [col for col in columns if col not in df.columns]
+#                     if missing_columns:
+#                         print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                         continue
 
-                    # Get distinct combinations of the selected columns
-                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                     # Get distinct combinations of the selected columns
+#                     distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                    # Convert columns to strings temporarily for sorting
-                    distinct_values = distinct_values.astype(str)
+#                     # Convert columns to strings temporarily for sorting
+#                     distinct_values = distinct_values.astype(str)
 
-                    # Sort distinct values by the specified columns for hierarchical grouping
-                    distinct_values.sort_values(by=columns, inplace=True)
+#                     # Sort distinct values by the specified columns for hierarchical grouping
+#                     distinct_values.sort_values(by=columns, inplace=True)
 
-                    # Add an empty encoding column for each column in the DataFrame
-                    for col in columns:
-                        distinct_values[f'{col}_enc'] = pd.NA
+#                     # Add an empty encoding column for each column in the DataFrame
+#                     for col in columns:
+#                         distinct_values[f'{col}_enc'] = pd.NA
 
-                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                     distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
 
-    else:
-        # If the file does not exist, create a new one
-        with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
-            for sheet_name, columns in columns_dict.items():
-                missing_columns = [col for col in columns if col not in df.columns]
-                if missing_columns:
-                    print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                    continue
+#     else:
+#         # If the file does not exist, create a new one
+#         with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+#             for sheet_name, columns in columns_dict.items():
+#                 missing_columns = [col for col in columns if col not in df.columns]
+#                 if missing_columns:
+#                     print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                     continue
 
-                # Get distinct combinations of the selected columns
-                distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                 # Get distinct combinations of the selected columns
+#                 distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                # Convert columns to strings temporarily for sorting
-                distinct_values = distinct_values.astype(str)
+#                 # Convert columns to strings temporarily for sorting
+#                 distinct_values = distinct_values.astype(str)
 
-                # Sort distinct values by the specified columns for hierarchical grouping
-                distinct_values.sort_values(by=columns, inplace=True)
+#                 # Sort distinct values by the specified columns for hierarchical grouping
+#                 distinct_values.sort_values(by=columns, inplace=True)
 
-                # Add an empty encoding column for each column in the DataFrame
-                for col in columns:
-                    distinct_values[f'{col}_enc'] = pd.NA
+#                 # Add an empty encoding column for each column in the DataFrame
+#                 for col in columns:
+#                     distinct_values[f'{col}_enc'] = pd.NA
 
-                distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                 distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
                 
 
 
 
-def enrich_instacart_df(df):
-    aisles = pd.read_csv('data/input/aisles.csv')
-    products = pd.read_csv('data/input/products.csv')
-    departments = pd.read_csv('data/input/departments.csv')
+# def enrich_instacart_df(df):
+#     aisles = pd.read_csv('data/input/aisles.csv')
+#     products = pd.read_csv('data/input/products.csv')
+#     departments = pd.read_csv('data/input/departments.csv')
 
-    enriched_df = df.merge(products, on='product_id', how='inner') \
-                    .merge(aisles, on='aisle_id', how='inner') \
-                    .merge(departments, on='department_id', how='inner')
-    return enriched_df
+#     enriched_df = df.merge(products, on='product_id', how='inner') \
+#                     .merge(aisles, on='aisle_id', how='inner') \
+#                     .merge(departments, on='department_id', how='inner')
+#     return enriched_df
 
 
 from sklearn.metrics import pairwise_distances
@@ -1380,94 +1380,94 @@ def evaluate_agglomerative_clustering(X,
     plt.show()
 
 
-import seaborn as sns
+# import seaborn as sns
 
-def plot_cluster_boxplots(dataframe, features, cluster_labels, file_tag=None):
-    """
-    Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
-    Optionally adds a prefix to the title of the graph if file_tag is provided.
+# def plot_cluster_boxplots(dataframe, features, cluster_labels, file_tag=None):
+#     """
+#     Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
+#     Optionally adds a prefix to the title of the graph if file_tag is provided.
 
-    Parameters:
-    dataframe (pd.DataFrame): The dataframe containing the data.
-    features (list): List of features to plot.
-    cluster_labels (list): List of cluster labels to compare.
-    file_tag (str, optional): Prefix to add to the title of the graph.
-    """
+#     Parameters:
+#     dataframe (pd.DataFrame): The dataframe containing the data.
+#     features (list): List of features to plot.
+#     cluster_labels (list): List of cluster labels to compare.
+#     file_tag (str, optional): Prefix to add to the title of the graph.
+#     """
 
-    # Ensure cluster values within each cluster label are ordered
-    for cluster_label in cluster_labels:
-        dataframe[cluster_label] = dataframe[cluster_label].astype('category')
-        dataframe[cluster_label].cat.set_categories(sorted(dataframe[cluster_label].unique()))
+#     # Ensure cluster values within each cluster label are ordered
+#     for cluster_label in cluster_labels:
+#         dataframe[cluster_label] = dataframe[cluster_label].astype('category')
+#         dataframe[cluster_label].cat.set_categories(sorted(dataframe[cluster_label].unique()))
 
-    # Create subplots
-    fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
+#     # Create subplots
+#     fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
 
-    # Loop through each feature and create boxplots
-    for i, feature in enumerate(features):
-        for j, cluster_label in enumerate(cluster_labels):
-            sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
-            title_prefix = f'{file_tag} - ' if file_tag else ''
-            axes[i, j].set_title(f'{title_prefix}{cluster_label} Distribution - {feature}')
+#     # Loop through each feature and create boxplots
+#     for i, feature in enumerate(features):
+#         for j, cluster_label in enumerate(cluster_labels):
+#             sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
+#             title_prefix = f'{file_tag} - ' if file_tag else ''
+#             axes[i, j].set_title(f'{title_prefix}{cluster_label} Distribution - {feature}')
 
-    # Adjust layout
-    plt.tight_layout()
-    plt.show()
+#     # Adjust layout
+#     plt.tight_layout()
+#     plt.show()
 
 
 
 from scipy.stats import binom
-from mlxtend.frequent_patterns import fpgrowth, association_rules
+# from mlxtend.frequent_patterns import fpgrowth, association_rules
 
-def find_patterns(dataframe, mine_rules=True, min_patterns=10, min_length=3, max_pvalue=0.1, min_confidence=0.6, min_lift=1.4):
-    """
-    Finds frequent itemsets and association rules in the given dataframe using the FP-Growth algorithm.
-    Parameters:
-    dataframe (pd.DataFrame): The input dataframe containing the data to analyze.
-    mine_rules (bool): Whether to mine association rules from the frequent itemsets. Default is True.
-    min_patterns (int): The minimum number of patterns to find before stopping. Default is 10.
-    min_length (int): The minimum length of the itemsets to consider. Default is 3.
-    max_pvalue (float): The maximum p-value for the significance of the patterns. Default is 0.1.
-    min_confidence (float): The minimum confidence for the association rules. Default is 0.6.
-    min_lift (float): The minimum lift for the association rules. Default is 1.4.
-    Returns:
-    pd.DataFrame: A dataframe containing the found patterns and their metrics.
-    """
+# def find_patterns(dataframe, mine_rules=True, min_patterns=10, min_length=3, max_pvalue=0.1, min_confidence=0.6, min_lift=1.4):
+#     """
+#     Finds frequent itemsets and association rules in the given dataframe using the FP-Growth algorithm.
+#     Parameters:
+#     dataframe (pd.DataFrame): The input dataframe containing the data to analyze.
+#     mine_rules (bool): Whether to mine association rules from the frequent itemsets. Default is True.
+#     min_patterns (int): The minimum number of patterns to find before stopping. Default is 10.
+#     min_length (int): The minimum length of the itemsets to consider. Default is 3.
+#     max_pvalue (float): The maximum p-value for the significance of the patterns. Default is 0.1.
+#     min_confidence (float): The minimum confidence for the association rules. Default is 0.6.
+#     min_lift (float): The minimum lift for the association rules. Default is 1.4.
+#     Returns:
+#     pd.DataFrame: A dataframe containing the found patterns and their metrics.
+#     """
     
-    def add_significance(patterns, df):
-        N = len(df)
-        probs = {col: df[[col]].eq(1).sum()[col] / N for col in df.columns}
+#     def add_significance(patterns, df):
+#         N = len(df)
+#         probs = {col: df[[col]].eq(1).sum()[col] / N for col in df.columns}
         
-        patterns['significance'] = 0.0
-        for i, pattern in patterns.iterrows():
-            prob = 1
-            for item in pattern['itemsets']:
-                prob *= probs[item]
-            patterns.at[i, 'significance'] = 1 - binom.cdf(pattern['support'] * N - 1, N, prob)
+#         patterns['significance'] = 0.0
+#         for i, pattern in patterns.iterrows():
+#             prob = 1
+#             for item in pattern['itemsets']:
+#                 prob *= probs[item]
+#             patterns.at[i, 'significance'] = 1 - binom.cdf(pattern['support'] * N - 1, N, prob)
 
-    patterns = {}
-    min_support = 1
-    while min_support > 0:
-        min_support = min_support * 0.9
-        print("Finding patterns with min sup %f" % min_support)
-        patterns = fpgrowth(dataframe, min_support=min_support, use_colnames=True)
+#     patterns = {}
+#     min_support = 1
+#     while min_support > 0:
+#         min_support = min_support * 0.9
+#         print("Finding patterns with min sup %f" % min_support)
+#         patterns = fpgrowth(dataframe, min_support=min_support, use_colnames=True)
 
-        if mine_rules and len(patterns) > 0:
-            patterns = association_rules(patterns, metric="lift", min_threshold=min_lift)
-            patterns = patterns[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
-            patterns = patterns[(patterns['confidence'] >= min_confidence)]
-            patterns['itemsets'] = [x | y for x, y in zip(patterns['antecedents'], patterns['consequents'])]
+#         if mine_rules and len(patterns) > 0:
+#             patterns = association_rules(patterns, metric="lift", min_threshold=min_lift)
+#             patterns = patterns[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
+#             patterns = patterns[(patterns['confidence'] >= min_confidence)]
+#             patterns['itemsets'] = [x | y for x, y in zip(patterns['antecedents'], patterns['consequents'])]
 
-        patterns['length'] = patterns['itemsets'].apply(lambda x: len(x))
-        patterns = patterns[(patterns['length'] >= min_length)]
-        add_significance(patterns, dataframe)
-        patterns = patterns[(patterns['significance'] <= max_pvalue)]
+#         patterns['length'] = patterns['itemsets'].apply(lambda x: len(x))
+#         patterns = patterns[(patterns['length'] >= min_length)]
+#         add_significance(patterns, dataframe)
+#         patterns = patterns[(patterns['significance'] <= max_pvalue)]
 
-        if len(patterns) >= min_patterns:
-            break
+#         if len(patterns) >= min_patterns:
+#             break
 
-    patterns['itemsets'] = patterns['itemsets'].apply(lambda x: ', '.join(list(x)))
-    print("Number of found patterns:", len(patterns))
-    return patterns
+#     patterns['itemsets'] = patterns['itemsets'].apply(lambda x: ', '.join(list(x)))
+#     print("Number of found patterns:", len(patterns))
+#     return patterns
 
 
 def timeseries_agg_pivot_df(df, date_col='event_date', nunique_cols=None, sum_cols=None, groupby_cols=None, pivot_cols=['device_category'], include_totals=False):
@@ -1739,12 +1739,14 @@ import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from dslabs_functions import plot_multibar_chart
 
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 def plot_single_model_evaluation(train: Series, test: Series, prd_train: Series, prd_test: Series, title: str = ""):
+    # Drop NaN values from the input series
+    # train = train.dropna()
+    # test = test.dropna()
+    # prd_train = prd_train.dropna()
+    # prd_test = prd_test.dropna()      
+    
     # Calculate performance metrics
     metrics = {
         "MAE": [
