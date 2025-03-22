@@ -234,7 +234,8 @@ def plot_multibar_chart(
     # This is the location for each bar
     index: ndarray = arange(len(group_labels))
     bar_width: float = 0.8 / len(bar_labels)
-    ax.set_xticks(index + bar_width / 2, labels=group_labels)
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(group_labels)
 
     for i in range(len(bar_labels)):
         bar_yvalues = yvalues[bar_labels[i]]
@@ -250,7 +251,6 @@ def plot_multibar_chart(
             ax.set_ylim(-1.0, 1.0)
     ax.legend(fontsize="xx-small")
     return ax
-
 
 def plot_multi_scatters_chart(
     data: DataFrame, var1: str, var2: str, var3: str = "", ax: Axes = None  # type: ignore
@@ -1055,7 +1055,12 @@ def dataframe_temporal_train_test_split(data: DataFrame, trn_pct: float = 0.90) 
 #             FORECASTING
 # ---------------------------------------
 
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import numpy as np
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    epsilon = 1e-10  # Small constant to avoid division by zero
+    return np.mean(np.abs((y_true - y_pred) / (y_true + epsilon))) * 100
 
 
 FORECAST_MEASURES = {
@@ -1085,7 +1090,6 @@ def plot_forecasting_series(
 
     return ax
 
-
 def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Series, title: str = "") -> list[Axes]:
     ev1: dict = {
         "RMSE": [sqrt(FORECAST_MEASURES["MSE"](trn, prd_trn)), sqrt(FORECAST_MEASURES["MSE"](tst, prd_tst))],
@@ -1101,6 +1105,6 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
     fig.suptitle(title)
     plot_multibar_chart(["train", "test"], ev1, ax=axs[0], title="Scale-dependent error", percentage=False)
     plot_multibar_chart(["train", "test"], ev2, ax=axs[1], title="Percentage error", percentage=True)
-
     return axs
+
 
