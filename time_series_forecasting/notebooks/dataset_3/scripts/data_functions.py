@@ -1732,5 +1732,129 @@ def fill_missing_values_arima(df, order=(5, 1, 0), freq='D'):
     return df_filled
 
 
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from dslabs_functions import plot_multibar_chart
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+def plot_single_model_evaluation(train: Series, test: Series, prd_train: Series, prd_test: Series, title: str = ""):
+    # Calculate performance metrics
+    metrics = {
+        "MAE": [
+            mean_absolute_error(train, prd_train),
+            mean_absolute_error(test, prd_test),
+        ],
+        "MSE": [
+            mean_squared_error(train, prd_train),
+            mean_squared_error(test, prd_test),
+        ],
+        "RMSE": [
+            mean_squared_error(train, prd_train, squared=False),
+            mean_squared_error(test, prd_test, squared=False),
+        ],
+        "R²": [
+            r2_score(train, prd_train),
+            r2_score(test, prd_test),
+        ]
+    }
+
+    # Create a DataFrame from the metrics dictionary
+    performance_df = pd.DataFrame(metrics, index=["Train", "Test"]).T
+    
+    # Create subplots
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle(title, fontsize=16)
+    
+    # Plot scale-dependent errors
+    scale_dependent_errors = ["MAE", "MSE", "RMSE"]
+    scale_dependent_data = performance_df.loc[scale_dependent_errors]
+    ax = axs[0]
+    ax.set_title("Scale-dependent errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.2  # Adjusted bar width for more spacing
+    index = np.arange(len(scale_dependent_data.columns))
+    for i, metric in enumerate(scale_dependent_data.index):
+        bars = ax.bar(index + i * bar_width * 1.5, scale_dependent_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width)
+    ax.set_xticklabels(scale_dependent_data.columns)
+    ax.legend()
+    
+    # Plot percentage errors
+    percentage_errors = ["R²"]
+    percentage_data = performance_df.loc[percentage_errors]
+    ax = axs[1]
+    ax.set_title("Percentage errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.35
+    index = np.arange(len(percentage_data.columns))
+    for i, metric in enumerate(percentage_data.index):
+        bars = ax.bar(index + i * bar_width, percentage_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(percentage_data.columns)
+    ax.legend()
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+
+
+def plot_performance_metrics(metrics: dict, title: str = ""):
+    # Create a DataFrame from the metrics dictionary
+    performance_df = pd.DataFrame(metrics)
+    
+    # Separate scale-dependent errors and percentage errors
+    scale_dependent_errors = ["MAE", "MSE", "RMSE"]
+    percentage_errors = ["R²"]
+    
+    # Create subplots
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle(title, fontsize=16)
+    
+    # Plot scale-dependent errors
+    scale_dependent_data = performance_df[["Model"] + scale_dependent_errors].set_index("Model").T
+    ax = axs[0]
+    ax.set_title("Scale-dependent errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.2  # Adjusted bar width for more spacing
+    index = np.arange(len(scale_dependent_data.columns))
+    for i, metric in enumerate(scale_dependent_data.index):
+        bars = ax.bar(index + i * bar_width * 1.5, scale_dependent_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width)
+    ax.set_xticklabels(scale_dependent_data.columns)
+    ax.legend()
+    
+    # Plot percentage errors
+    percentage_data = performance_df[["Model"] + percentage_errors].set_index("Model").T
+    ax = axs[1]
+    ax.set_title("Percentage errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.35
+    index = np.arange(len(percentage_data.columns))
+    for i, metric in enumerate(percentage_data.index):
+        bars = ax.bar(index + i * bar_width, percentage_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(percentage_data.columns)
+    ax.legend()
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+
+
+
+
 print("data_functions loaded")
 
