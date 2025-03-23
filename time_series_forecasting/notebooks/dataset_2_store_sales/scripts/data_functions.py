@@ -167,6 +167,7 @@ def calculate_returning_user_percentage_by_group(df, groupby_column):
     
     return agg_table
 
+from math import pi, sin, cos
 
 
 # Generalized function to encode any column based on a mapping dictionary
@@ -350,11 +351,28 @@ def mvi_by_filling(data: DataFrame, strategy: str = "frequent") -> DataFrame:
             lst_dfs.append(tmp_bool)
         df = concat(lst_dfs, axis=1)
     else:
-        imp = KNNImputer(n_neighbors=5)
+        imp = KNNImputer(n_neighbors=10)
         imp.fit(data)
         ar: ndarray = imp.transform(data)
         df = DataFrame(ar, columns=data.columns, index=data.index)
     return df
+
+
+
+def remove_columns_with_na(df):
+    df_copy = df.copy()
+    df_cols = df_copy.columns
+
+    # Identify columns with any missing values
+    cols_with_na = [col for col in df_cols if df_copy[col].isna().any()]
+
+    # Print the list of columns that have missing values
+    print(f"Columns with missing values: {cols_with_na}")
+
+    # Remove columns that have any missing values
+    df_copy = df_copy.drop(columns=cols_with_na)
+
+    return df_copy
 
 
 
@@ -965,41 +983,33 @@ def drop_outliers(df,summary5_df,outlier_var):
 
 from sklearn.preprocessing import StandardScaler
 
-def apply_standard_scaler(df: DataFrame, target) -> DataFrame:
+def apply_standard_scaler(df: DataFrame) -> DataFrame:
+    """
+    Apply StandardScaler to the entire DataFrame.
 
-    df_copy=df.copy()
+    Args:
+    df (pd.DataFrame): The DataFrame to scale.
+
+    Returns:
+    pd.DataFrame: The scaled DataFrame.
+    """
+    df_copy = df.copy()
     
-    # this script is available in data_functions originally from DSLabs site in Scaling chapter
-    
-    # Separate the target column from the features
-    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
-    
-    # Apply scaling to only the feature columns
-    transf: StandardScaler = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
+    # Apply scaling to the entire DataFrame
+    transf = StandardScaler(with_mean=True, with_std=True, copy=True).fit(df_copy)
     df_zscore = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
-    
-    # Add the target column back to the scaled dataframe
-    df_zscore[target] = target_data
 
     return df_zscore
 
 
 from sklearn.preprocessing import MinMaxScaler
-def apply_min_max_scaler(df: DataFrame, target) -> DataFrame:
 
-    df_copy=df.copy()
+def apply_min_max_scaler(df: DataFrame) -> DataFrame:
+    df_copy = df.copy()
     
-    # this script is available in data_functions originally from DSLabs site in Scaling chapter
-    
-    # Separate the target column from the features
-    target_data: Series = df_copy.pop(target)  # Remove the target from the dataframe for scaling
-    
-    # Apply MinMax scaling to the feature columns only
-    transf: MinMaxScaler = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
+    # Apply MinMax scaling to the entire DataFrame including the target column
+    transf = MinMaxScaler(feature_range=(0, 1), copy=True).fit(df_copy)
     df_minmax = DataFrame(transf.transform(df_copy), index=df_copy.index, columns=df_copy.columns)
-    
-    # Add the target column back to the scaled dataframe
-    df_minmax[target] = target_data  # Add the unscaled target column back
 
     return df_minmax
 
@@ -1190,116 +1200,116 @@ def apply_balanced_smote(df,target='returning_user',sort_by='day_of_year'):
 
 
 import os
-from openpyxl import load_workbook
+# from openpyxl import load_workbook
 
 
-# Function to append distinct combinations of selected columns into sheets in an Excel file
-def append_columns_to_excel(df, columns_dict, output_file):
-    """
-    Append distinct combinations of selected columns into separate sheets in an existing Excel file,
-    with the columns ordered by their names for easier hierarchical encoding and add an empty encoding column.
+# # Function to append distinct combinations of selected columns into sheets in an Excel file
+# def append_columns_to_excel(df, columns_dict, output_file):
+#     """
+#     Append distinct combinations of selected columns into separate sheets in an existing Excel file,
+#     with the columns ordered by their names for easier hierarchical encoding and add an empty encoding column.
 
-    Args:
-    df (pd.DataFrame): The DataFrame containing the columns to save.
-    columns_dict (dict): Dictionary where keys are sheet names, and values are lists of column names to include.
-    output_file (str): The path of the Excel file to save the sheets.
+#     Args:
+#     df (pd.DataFrame): The DataFrame containing the columns to save.
+#     columns_dict (dict): Dictionary where keys are sheet names, and values are lists of column names to include.
+#     output_file (str): The path of the Excel file to save the sheets.
 
-    Returns:
-    None
-    """
-    # Check if the file exists and is a valid Excel file
-    if os.path.exists(output_file):
-        try:
-            # Try to load the existing workbook
-            with pd.ExcelWriter(output_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
-                writer.book = load_workbook(output_file)
+#     Returns:
+#     None
+#     """
+#     # Check if the file exists and is a valid Excel file
+#     if os.path.exists(output_file):
+#         try:
+#             # Try to load the existing workbook
+#             with pd.ExcelWriter(output_file, engine='openpyxl', mode='a', if_sheet_exists='replace') as writer:
+#                 writer.book = load_workbook(output_file)
                 
-                # Loop over each sheet name and corresponding list of columns
-                for sheet_name, columns in columns_dict.items():
-                    # Check if all the specified columns exist in the DataFrame
-                    missing_columns = [col for col in columns if col not in df.columns]
-                    if missing_columns:
-                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                        continue
+#                 # Loop over each sheet name and corresponding list of columns
+#                 for sheet_name, columns in columns_dict.items():
+#                     # Check if all the specified columns exist in the DataFrame
+#                     missing_columns = [col for col in columns if col not in df.columns]
+#                     if missing_columns:
+#                         print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                         continue
 
-                    # Get distinct combinations of the selected columns
-                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                     # Get distinct combinations of the selected columns
+#                     distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                    # Convert columns to strings temporarily for sorting to avoid float-string comparison errors
-                    distinct_values = distinct_values.astype(str)
+#                     # Convert columns to strings temporarily for sorting to avoid float-string comparison errors
+#                     distinct_values = distinct_values.astype(str)
 
-                    # Sort distinct values by the specified columns for hierarchical grouping
-                    distinct_values.sort_values(by=columns, inplace=True)
+#                     # Sort distinct values by the specified columns for hierarchical grouping
+#                     distinct_values.sort_values(by=columns, inplace=True)
 
-                    # Add an empty encoding column for each column in the DataFrame
-                    for col in columns:
-                        distinct_values[f'{col}_enc'] = pd.NA
+#                     # Add an empty encoding column for each column in the DataFrame
+#                     for col in columns:
+#                         distinct_values[f'{col}_enc'] = pd.NA
 
-                    # Write distinct values to a new sheet named after the sheet_name
-                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                     # Write distinct values to a new sheet named after the sheet_name
+#                     distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
                     
-        except Exception as e:
-            print(f"Error: {e}")
-            print("The file might be corrupt or invalid. Creating a new file.")
-            # Create a new file if loading fails
-            with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
-                for sheet_name, columns in columns_dict.items():
-                    missing_columns = [col for col in columns if col not in df.columns]
-                    if missing_columns:
-                        print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                        continue
+#         except Exception as e:
+#             print(f"Error: {e}")
+#             print("The file might be corrupt or invalid. Creating a new file.")
+#             # Create a new file if loading fails
+#             with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+#                 for sheet_name, columns in columns_dict.items():
+#                     missing_columns = [col for col in columns if col not in df.columns]
+#                     if missing_columns:
+#                         print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                         continue
 
-                    # Get distinct combinations of the selected columns
-                    distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                     # Get distinct combinations of the selected columns
+#                     distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                    # Convert columns to strings temporarily for sorting
-                    distinct_values = distinct_values.astype(str)
+#                     # Convert columns to strings temporarily for sorting
+#                     distinct_values = distinct_values.astype(str)
 
-                    # Sort distinct values by the specified columns for hierarchical grouping
-                    distinct_values.sort_values(by=columns, inplace=True)
+#                     # Sort distinct values by the specified columns for hierarchical grouping
+#                     distinct_values.sort_values(by=columns, inplace=True)
 
-                    # Add an empty encoding column for each column in the DataFrame
-                    for col in columns:
-                        distinct_values[f'{col}_enc'] = pd.NA
+#                     # Add an empty encoding column for each column in the DataFrame
+#                     for col in columns:
+#                         distinct_values[f'{col}_enc'] = pd.NA
 
-                    distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                     distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
 
-    else:
-        # If the file does not exist, create a new one
-        with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
-            for sheet_name, columns in columns_dict.items():
-                missing_columns = [col for col in columns if col not in df.columns]
-                if missing_columns:
-                    print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
-                    continue
+#     else:
+#         # If the file does not exist, create a new one
+#         with pd.ExcelWriter(output_file, engine='openpyxl', mode='w') as writer:
+#             for sheet_name, columns in columns_dict.items():
+#                 missing_columns = [col for col in columns if col not in df.columns]
+#                 if missing_columns:
+#                     print(f"Warning: The following columns are not found in the DataFrame for sheet '{sheet_name}': {missing_columns}")
+#                     continue
 
-                # Get distinct combinations of the selected columns
-                distinct_values = df[columns].drop_duplicates().dropna(how='all')
+#                 # Get distinct combinations of the selected columns
+#                 distinct_values = df[columns].drop_duplicates().dropna(how='all')
 
-                # Convert columns to strings temporarily for sorting
-                distinct_values = distinct_values.astype(str)
+#                 # Convert columns to strings temporarily for sorting
+#                 distinct_values = distinct_values.astype(str)
 
-                # Sort distinct values by the specified columns for hierarchical grouping
-                distinct_values.sort_values(by=columns, inplace=True)
+#                 # Sort distinct values by the specified columns for hierarchical grouping
+#                 distinct_values.sort_values(by=columns, inplace=True)
 
-                # Add an empty encoding column for each column in the DataFrame
-                for col in columns:
-                    distinct_values[f'{col}_enc'] = pd.NA
+#                 # Add an empty encoding column for each column in the DataFrame
+#                 for col in columns:
+#                     distinct_values[f'{col}_enc'] = pd.NA
 
-                distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
+#                 distinct_values.to_excel(writer, sheet_name=sheet_name, index=False)
                 
 
 
 
-def enrich_instacart_df(df):
-    aisles = pd.read_csv('data/input/aisles.csv')
-    products = pd.read_csv('data/input/products.csv')
-    departments = pd.read_csv('data/input/departments.csv')
+# def enrich_instacart_df(df):
+#     aisles = pd.read_csv('data/input/aisles.csv')
+#     products = pd.read_csv('data/input/products.csv')
+#     departments = pd.read_csv('data/input/departments.csv')
 
-    enriched_df = df.merge(products, on='product_id', how='inner') \
-                    .merge(aisles, on='aisle_id', how='inner') \
-                    .merge(departments, on='department_id', how='inner')
-    return enriched_df
+#     enriched_df = df.merge(products, on='product_id', how='inner') \
+#                     .merge(aisles, on='aisle_id', how='inner') \
+#                     .merge(departments, on='department_id', how='inner')
+#     return enriched_df
 
 
 from sklearn.metrics import pairwise_distances
@@ -1370,32 +1380,483 @@ def evaluate_agglomerative_clustering(X,
     plt.show()
 
 
-import seaborn as sns
+# import seaborn as sns
 
-def plot_cluster_boxplots(dataframe, features, cluster_labels):
-    """
-    Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
+# def plot_cluster_boxplots(dataframe, features, cluster_labels, file_tag=None):
+#     """
+#     Plots boxplots for the given features in the dataframe, comparing the specified cluster labels.
+#     Optionally adds a prefix to the title of the graph if file_tag is provided.
 
-    Parameters:
-    dataframe (pd.DataFrame): The dataframe containing the data.
-    features (list): List of features to plot.
-    cluster_labels (list): List of cluster labels to compare.
+#     Parameters:
+#     dataframe (pd.DataFrame): The dataframe containing the data.
+#     features (list): List of features to plot.
+#     cluster_labels (list): List of cluster labels to compare.
+#     file_tag (str, optional): Prefix to add to the title of the graph.
+#     """
+
+#     # Ensure cluster values within each cluster label are ordered
+#     for cluster_label in cluster_labels:
+#         dataframe[cluster_label] = dataframe[cluster_label].astype('category')
+#         dataframe[cluster_label].cat.set_categories(sorted(dataframe[cluster_label].unique()))
+
+#     # Create subplots
+#     fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
+
+#     # Loop through each feature and create boxplots
+#     for i, feature in enumerate(features):
+#         for j, cluster_label in enumerate(cluster_labels):
+#             sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
+#             title_prefix = f'{file_tag} - ' if file_tag else ''
+#             axes[i, j].set_title(f'{title_prefix}{cluster_label} Distribution - {feature}')
+
+#     # Adjust layout
+#     plt.tight_layout()
+#     plt.show()
+
+
+
+from scipy.stats import binom
+# from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+# def find_patterns(dataframe, mine_rules=True, min_patterns=10, min_length=3, max_pvalue=0.1, min_confidence=0.6, min_lift=1.4):
+#     """
+#     Finds frequent itemsets and association rules in the given dataframe using the FP-Growth algorithm.
+#     Parameters:
+#     dataframe (pd.DataFrame): The input dataframe containing the data to analyze.
+#     mine_rules (bool): Whether to mine association rules from the frequent itemsets. Default is True.
+#     min_patterns (int): The minimum number of patterns to find before stopping. Default is 10.
+#     min_length (int): The minimum length of the itemsets to consider. Default is 3.
+#     max_pvalue (float): The maximum p-value for the significance of the patterns. Default is 0.1.
+#     min_confidence (float): The minimum confidence for the association rules. Default is 0.6.
+#     min_lift (float): The minimum lift for the association rules. Default is 1.4.
+#     Returns:
+#     pd.DataFrame: A dataframe containing the found patterns and their metrics.
+#     """
+    
+#     def add_significance(patterns, df):
+#         N = len(df)
+#         probs = {col: df[[col]].eq(1).sum()[col] / N for col in df.columns}
+        
+#         patterns['significance'] = 0.0
+#         for i, pattern in patterns.iterrows():
+#             prob = 1
+#             for item in pattern['itemsets']:
+#                 prob *= probs[item]
+#             patterns.at[i, 'significance'] = 1 - binom.cdf(pattern['support'] * N - 1, N, prob)
+
+#     patterns = {}
+#     min_support = 1
+#     while min_support > 0:
+#         min_support = min_support * 0.9
+#         print("Finding patterns with min sup %f" % min_support)
+#         patterns = fpgrowth(dataframe, min_support=min_support, use_colnames=True)
+
+#         if mine_rules and len(patterns) > 0:
+#             patterns = association_rules(patterns, metric="lift", min_threshold=min_lift)
+#             patterns = patterns[['antecedents', 'consequents', 'support', 'confidence', 'lift']]
+#             patterns = patterns[(patterns['confidence'] >= min_confidence)]
+#             patterns['itemsets'] = [x | y for x, y in zip(patterns['antecedents'], patterns['consequents'])]
+
+#         patterns['length'] = patterns['itemsets'].apply(lambda x: len(x))
+#         patterns = patterns[(patterns['length'] >= min_length)]
+#         add_significance(patterns, dataframe)
+#         patterns = patterns[(patterns['significance'] <= max_pvalue)]
+
+#         if len(patterns) >= min_patterns:
+#             break
+
+#     patterns['itemsets'] = patterns['itemsets'].apply(lambda x: ', '.join(list(x)))
+#     print("Number of found patterns:", len(patterns))
+#     return patterns
+
+
+def timeseries_agg_pivot_df(df, date_col='event_date', nunique_cols=None, sum_cols=None, groupby_cols=None, pivot_cols=['device_category'], include_totals=False):
     """
+    Aggregates a time series DataFrame based on specified parameters.
+
+    Args:
+    df (pd.DataFrame): The DataFrame to aggregate.
+    date_col (str): The name of the event date column.
+    nunique_cols (list, optional): List of columns to calculate unique counts.
+    sum_cols (list, optional): List of columns to sum.
+    groupby_cols (list, optional): List of columns to group by.
+    pivot_cols (list): List of columns to pivot.
+    include_totals (bool): Whether to include total values per date_col.
+
+    Returns:
+    pd.DataFrame: The aggregated DataFrame.
+    """
+    if nunique_cols is None:
+        nunique_cols = []
+    if sum_cols is None:
+        sum_cols = []
+    if groupby_cols is None:
+        groupby_cols = []
+
+    if not nunique_cols and not sum_cols:
+        raise ValueError("At least one of 'nunique_cols' or 'sum_cols' must be provided.")
+
+    # Group by the specified columns and event date
+    grouped = df.groupby(groupby_cols + [date_col] + pivot_cols)
+
+    # Aggregate the unique count and sum columns
+    agg_dict = {col: 'nunique' for col in nunique_cols}
+    agg_dict.update({col: 'sum' for col in sum_cols})
+    aggregated = grouped.agg(agg_dict).reset_index()
+
+    # Pivot the DataFrame based on the pivot columns
+    pivoted = aggregated.pivot_table(index=groupby_cols + [date_col], columns=pivot_cols, aggfunc='sum', fill_value=0)
+
+    # Flatten the multi-level columns
+    pivoted.columns = [
+        f"{'sum_' if col[-1] in sum_cols else 'nunique_'}{'_'.join(map(str, col)).strip()}"
+        for col in pivoted.columns.values
+    ]
+    pivoted.reset_index(inplace=True)
+
+    # Sort by the event date column in ascending order
+    pivoted.sort_values(by=date_col, ascending=True, inplace=True)
+
+    if include_totals:
+        total_agg_dict = {col: 'nunique' for col in nunique_cols}
+        total_agg_dict.update({col: 'sum' for col in sum_cols})
+        total_aggregated = df.groupby([date_col]).agg(total_agg_dict).reset_index()
+        total_aggregated.columns = [f'total_{col}' if col != date_col else col for col in total_aggregated.columns]
+        pivoted = pivoted.merge(total_aggregated, on=date_col, how='left')
+
+    return pivoted
+
+
+
+from dslabs_functions import plot_line_chart
+
+
+def plot_ts_multivariate_chart(data: DataFrame, title: str) -> list[Axes]:
+    fig: Figure
+    axs: list[Axes]
+    height = 10  # Hardcoded height for more margin between subplots
+    fig, axs = subplots(data.shape[1], 1, figsize=(3 * height, height / 2 * data.shape[1]))
+    fig.suptitle(title)
+
+    for i in range(data.shape[1]):
+        col: str = data.columns[i]
+        plot_line_chart(
+            data[col].index.to_list(),
+            data[col].to_list(),
+            ax=axs[i],
+            xlabel=data.index.name,
+            ylabel='',
+        )
+        axs[i].set_title(col, fontsize=10, pad=10)
+        axs[i].margins(y=0.8)  # Add space between each chart
+    return axs
+
+
+
+from matplotlib.pyplot import subplots, show, gca
+from matplotlib.axes import Axes
+from statsmodels.tsa.seasonal import DecomposeResult, seasonal_decompose
+from dslabs_functions import HEIGHT, set_chart_labels
+
+
+def plot_components(
+    series: Series,
+    title: str = "",
+    x_label: str = "time",
+    y_label: str = "",
+) -> list[Axes]:
+    decomposition: DecomposeResult = seasonal_decompose(series, model="add")
+    components: dict = {
+        "observed": series,
+        "trend": decomposition.trend,
+        "seasonal": decomposition.seasonal,
+        "residual": decomposition.resid,
+    }
+    rows: int = len(components)
+    fig: Figure
+    axs: list[Axes]
+    fig, axs = subplots(rows, 1, figsize=(3 * HEIGHT, rows * HEIGHT))
+    fig.suptitle(f"{title}")
+    i: int = 0
+    for key in components:
+        set_chart_labels(axs[i], title=key, xlabel=x_label, ylabel=y_label)
+        axs[i].plot(components[key])
+        i += 1
+    return axs
+
+
+from dslabs_functions import plot_multiline_chart
+
+
+def get_lagged_series(series: Series, max_lag: int, delta: int = 1):
+    lagged_series: dict = {"original": series, "lag 1": series.shift(1)}
+    for i in range(delta, max_lag + 1, delta):
+        lagged_series[f"lag {i}"] = series.shift(i)
+    return lagged_series
+
+
+
+
+from matplotlib.pyplot import setp
+from matplotlib.gridspec import GridSpec
+
+
+def autocorrelation_study(series: Series, max_lag: int, delta: int = 1):
+    k: int = int(max_lag / delta)
+    fig = figure(figsize=(4 * HEIGHT, 2 * HEIGHT), constrained_layout=True)
+    gs = GridSpec(2, k, figure=fig)
+
+    series_values: list = series.tolist()
+    for i in range(1, k + 1):
+        ax = fig.add_subplot(gs[0, i - 1])
+        lag = i * delta
+        ax.scatter(series.shift(lag).tolist(), series_values)
+        ax.set_xlabel(f"lag {lag}")
+        ax.set_ylabel("original")
+    ax = fig.add_subplot(gs[1, :])
+    ax.acorr(series, maxlags=max_lag)
+    ax.set_title("Autocorrelation")
+    ax.set_xlabel("Lags")
+    return
+
+
+
+from matplotlib.axes import Axes
+from matplotlib.pyplot import subplots, savefig
+from dslabs_functions import PAST_COLOR, FUTURE_COLOR, PRED_PAST_COLOR, PRED_FUTURE_COLOR, HEIGHT
+
+
+def plot_forecasting_series(
+    trn: Series,
+    tst: Series,
+    prd_tst: Series,
+    title: str = "",
+    xlabel: str = "time",
+    ylabel: str = "",
+) -> list[Axes]:
+    fig, ax = subplots(1, 1, figsize=(4 * HEIGHT, HEIGHT), squeeze=True)
+    fig.suptitle(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.plot(trn.index, trn.values, label="train", color=PAST_COLOR)
+    ax.plot(tst.index, tst.values, label="test", color=FUTURE_COLOR)
+    ax.plot(prd_tst.index, prd_tst.values, "--", label="test prediction", color=PRED_FUTURE_COLOR)
+    ax.legend(prop={"size": 5})
+
+    return ax
+
+
+from math import sqrt
+from dslabs_functions import plot_multibar_chart, FORECAST_MEASURES
+
+
+def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Series, title: str = "") -> list[Axes]:
+    ev1: dict = {
+        "RMSE": [sqrt(FORECAST_MEASURES["MSE"](trn, prd_trn)), sqrt(FORECAST_MEASURES["MSE"](tst, prd_tst))],
+        "MAE": [FORECAST_MEASURES["MAE"](trn, prd_trn), FORECAST_MEASURES["MAE"](tst, prd_tst)],
+    }
+    ev2: dict = {
+        "MAPE": [FORECAST_MEASURES["MAPE"](trn, prd_trn), FORECAST_MEASURES["MAPE"](tst, prd_tst)],
+        "R2": [FORECAST_MEASURES["R2"](trn, prd_trn), FORECAST_MEASURES["R2"](tst, prd_tst)],
+    }
+
+    # print(eval1, eval2)
+    fig, axs = subplots(1, 2, figsize=(1.5 * HEIGHT, 0.75 * HEIGHT), squeeze=True)
+    fig.suptitle(title)
+    plot_multibar_chart(["train", "test"], ev1, ax=axs[0], title="Scale-dependent error", percentage=False)
+    plot_multibar_chart(["train", "test"], ev2, ax=axs[1], title="Percentage error", percentage=True)
+    return axs
+
+
+from sklearn.model_selection import train_test_split
+
+
+# Function to split the series into train and test sets
+def series_train_test_split(series, trn_pct=0.90):
+    train_size = int(len(series) * trn_pct)
+    train, test = series[:train_size], series[train_size:]
+    return train, test
+
+from sklearn.base import RegressorMixin
+
+# Define the SimpleAvgRegressor class
+class SimpleAvgRegressor:
+	def fit(self, series):
+		self.mean = series.mean()
+	
+	def predict(self, series):
+		return Series([self.mean] * len(series), index=series.index)
+
+
+
+from statsmodels.tsa.arima.model import ARIMA
+
+def fill_missing_values_arima(df, order=(5, 1, 0), freq='D'):
+    """
+    Fill missing values in a DataFrame using ARIMA.
+
+    Args:
+    df (pd.DataFrame): The DataFrame with missing values.
+    order (tuple): The (p, d, q) order of the ARIMA model.
+    freq (str): The frequency of the time series data.
+
+    Returns:
+    pd.DataFrame: The DataFrame with missing values filled.
+    """
+    df_filled = df.copy()
+    
+    for column in df.columns:
+        series = df[column]
+        
+        # Check if there are missing values
+        if series.isnull().sum() > 0:
+            print(f"Filling missing values for column: {column}")
+            
+            # Ensure the series has the correct frequency
+            series = series.asfreq(freq)
+
+            # Fit an ARIMA model
+            model = ARIMA(series, order=order)
+            model_fit = model.fit()
+
+            # Predict the entire series
+            predictions = model_fit.predict(start=0, end=len(series) - 1)
+
+            # Fill missing values with predictions
+            series_filled = series.copy()
+            series_filled[series.isnull()] = predictions[series.isnull()]
+
+            # Update the filled series in the DataFrame
+            df_filled[column] = series_filled
+
+    return df_filled
+
+
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from dslabs_functions import plot_multibar_chart
+
+
+def plot_single_model_evaluation(train: Series, test: Series, prd_train: Series, prd_test: Series, title: str = ""):
+    # Drop NaN values from the input series
+    # train = train.dropna()
+    # test = test.dropna()
+    # prd_train = prd_train.dropna()
+    # prd_test = prd_test.dropna()      
+    
+    # Calculate performance metrics
+    metrics = {
+        "MAE": [
+            mean_absolute_error(train, prd_train),
+            mean_absolute_error(test, prd_test),
+        ],
+        "MSE": [
+            mean_squared_error(train, prd_train),
+            mean_squared_error(test, prd_test),
+        ],
+        "RMSE": [
+            np.sqrt(mean_squared_error(train, prd_train)),
+            np.sqrt(mean_squared_error(test, prd_test)),
+        ],
+        "R²": [
+            r2_score(train, prd_train),
+            r2_score(test, prd_test),
+        ]
+    }
+
+    # Create a DataFrame from the metrics dictionary
+    performance_df = pd.DataFrame(metrics, index=["Train", "Test"]).T
+    
     # Create subplots
-    fig, axes = plt.subplots(nrows=len(features), ncols=len(cluster_labels), figsize=(15, 5 * len(features)))
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle(title, fontsize=16)
+    
+    # Plot scale-dependent errors
+    scale_dependent_errors = ["MAE", "MSE", "RMSE"]
+    scale_dependent_data = performance_df.loc[scale_dependent_errors]
+    ax = axs[0]
+    ax.set_title("Scale-dependent errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.2  # Adjusted bar width for more spacing
+    index = np.arange(len(scale_dependent_data.columns))
+    for i, metric in enumerate(scale_dependent_data.index):
+        bars = ax.bar(index + i * bar_width * 1.5, scale_dependent_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width)
+    ax.set_xticklabels(scale_dependent_data.columns)
+    ax.legend()
+    
+    # Plot percentage errors
+    percentage_errors = ["R²"]
+    percentage_data = performance_df.loc[percentage_errors]
+    ax = axs[1]
+    ax.set_title("Percentage errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.35
+    index = np.arange(len(percentage_data.columns))
+    for i, metric in enumerate(percentage_data.index):
+        bars = ax.bar(index + i * bar_width, percentage_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(percentage_data.columns)
+    ax.legend()
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
 
-    # Loop through each feature and create boxplots
-    for i, feature in enumerate(features):
-        for j, cluster_label in enumerate(cluster_labels):
-            sns.boxplot(x=cluster_label, y=feature, data=dataframe, ax=axes[i, j])
-            axes[i, j].set_title(f'{cluster_label} - {feature}')
 
-    # Adjust layout
-    plt.tight_layout()
+def plot_performance_metrics(metrics: dict, title: str = ""):
+    # Create a DataFrame from the metrics dictionary
+    performance_df = pd.DataFrame(metrics)
+    
+    # Separate scale-dependent errors and percentage errors
+    scale_dependent_errors = ["MAE", "MSE", "RMSE"]
+    percentage_errors = ["R²"]
+    
+    # Create subplots
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle(title, fontsize=16)
+    
+    # Plot scale-dependent errors
+    scale_dependent_data = performance_df[["Model"] + scale_dependent_errors].set_index("Model").T
+    ax = axs[0]
+    ax.set_title("Scale-dependent errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.2  # Adjusted bar width for more spacing
+    index = np.arange(len(scale_dependent_data.columns))
+    for i, metric in enumerate(scale_dependent_data.index):
+        bars = ax.bar(index + i * bar_width * 1.5, scale_dependent_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width)
+    ax.set_xticklabels(scale_dependent_data.columns)
+    ax.legend()
+    
+    # Plot percentage errors
+    percentage_data = performance_df[["Model"] + percentage_errors].set_index("Model").T
+    ax = axs[1]
+    ax.set_title("Percentage errors")
+    ax.set_xlabel("Metrics")
+    ax.set_ylabel("Values")
+    bar_width = 0.35
+    index = np.arange(len(percentage_data.columns))
+    for i, metric in enumerate(percentage_data.index):
+        bars = ax.bar(index + i * bar_width, percentage_data.loc[metric], bar_width, label=metric)
+        ax.bar_label(bars, fmt='%.2f')
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(percentage_data.columns)
+    ax.legend()
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.show()
 
 
 
-print("data_functions lodaded")
 
+print("data_functions loaded")
 
