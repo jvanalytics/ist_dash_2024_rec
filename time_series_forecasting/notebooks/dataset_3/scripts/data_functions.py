@@ -1758,8 +1758,8 @@ def plot_single_model_evaluation(train: Series, test: Series, prd_train: Series,
             mean_squared_error(test, prd_test),
         ],
         "RMSE": [
-            mean_squared_error(train, prd_train, squared=False),
-            mean_squared_error(test, prd_test, squared=False),
+            np.sqrt(mean_squared_error(train, prd_train)),
+            np.sqrt(mean_squared_error(test, prd_test)),
         ],
         "R²": [
             r2_score(train, prd_train),
