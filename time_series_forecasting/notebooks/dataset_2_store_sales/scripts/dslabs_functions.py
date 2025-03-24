@@ -3,7 +3,6 @@ file:       dslabs_functions.py
 version:    2023.1
 author:     Claudia Antunes
 """
-import numpy
 from math import pi, sin, cos, ceil, sqrt
 from itertools import product
 from datetime import datetime
@@ -36,7 +35,7 @@ from config import (
     FILL_COLOR,
     PAST_COLOR,
     FUTURE_COLOR,
-    # PRED_PAST_COLOR,
+    PRED_PAST_COLOR,
     PRED_FUTURE_COLOR,
     cmap_blues,
 )
@@ -112,10 +111,6 @@ def plot_line_chart(
 ) -> Axes:
     if ax is None:
         ax = gca()
-
-    print("yvalues sample:", yvalues[:5])  
-    print("Types:", [type(y) for y in yvalues[:5]])
-
     ax = set_chart_labels(ax=ax, title=title, xlabel=xlabel, ylabel=ylabel)
     ax = set_chart_xticks(xvalues, ax, percentage=percentage)
     if any(y < 0 for y in yvalues) and percentage:
@@ -239,7 +234,8 @@ def plot_multibar_chart(
     # This is the location for each bar
     index: ndarray = arange(len(group_labels))
     bar_width: float = 0.8 / len(bar_labels)
-    ax.set_xticks(index + bar_width / 2, labels=group_labels)
+    ax.set_xticks(index + bar_width / 2)
+    ax.set_xticklabels(group_labels)
 
     for i in range(len(bar_labels)):
         bar_yvalues = yvalues[bar_labels[i]]
@@ -255,7 +251,6 @@ def plot_multibar_chart(
             ax.set_ylim(-1.0, 1.0)
     ax.legend(fontsize="xx-small")
     return ax
-
 
 def plot_multi_scatters_chart(
     data: DataFrame, var1: str, var2: str, var3: str = "", ax: Axes = None  # type: ignore
@@ -1044,16 +1039,16 @@ def ts_aggregation_by(
 def series_train_test_split(data: Series, trn_pct: float = 0.90) -> tuple[Series, Series]:
     trn_size: int = int(len(data) * trn_pct)
     df_cp: Series = data.copy()
-
-    # If data is a DataFrame, select the first column
-    if isinstance(df_cp, pd.DataFrame):
-        df_cp = df_cp.iloc[:, 0]  # Select first column to ensure it's a Series
-
-    train: Series = df_cp.iloc[:trn_size]  
-    test: Series = df_cp.iloc[trn_size:]  
-
+    train: Series = df_cp.iloc[:trn_size, 0]
+    test: Series = df_cp.iloc[trn_size:, 0]
     return train, test
 
+def series_train_test_split_multiv(data: DataFrame, trn_pct: float = 0.90) -> tuple[DataFrame, DataFrame]:
+    trn_size: int = int(len(data) * trn_pct)
+    df_cp: DataFrame = data.copy()
+    train: DataFrame = df_cp.iloc[:trn_size, :]
+    test: DataFrame = df_cp.iloc[trn_size:, :]
+    return train, test
 
 
 def dataframe_temporal_train_test_split(data: DataFrame, trn_pct: float = 0.90) -> tuple[DataFrame, DataFrame]:
@@ -1068,7 +1063,12 @@ def dataframe_temporal_train_test_split(data: DataFrame, trn_pct: float = 0.90) 
 #             FORECASTING
 # ---------------------------------------
 
-from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, r2_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import numpy as np
+
+def mean_absolute_percentage_error(y_true, y_pred):
+    epsilon = 1e-10  # Small constant to avoid division by zero
+    return np.mean(np.abs((y_true - y_pred) / (y_true + epsilon))) * 100
 
 
 FORECAST_MEASURES = {
@@ -1098,7 +1098,6 @@ def plot_forecasting_series(
 
     return ax
 
-
 def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Series, title: str = "") -> list[Axes]:
     ev1: dict = {
         "RMSE": [sqrt(FORECAST_MEASURES["MSE"](trn, prd_trn)), sqrt(FORECAST_MEASURES["MSE"](tst, prd_tst))],
@@ -1111,10 +1110,9 @@ def plot_forecasting_eval(trn: Series, tst: Series, prd_trn: Series, prd_tst: Se
 
     # print(eval1, eval2)
     fig, axs = subplots(1, 2, figsize=(1.5 * HEIGHT, 0.75 * HEIGHT), squeeze=True)
-    fig.suptitle(title, fontsize = 12)
-    fig.subplots_adjust(top=0.80)  # Reduce the space to make room for the title
+    fig.suptitle(title)
     plot_multibar_chart(["train", "test"], ev1, ax=axs[0], title="Scale-dependent error", percentage=False)
     plot_multibar_chart(["train", "test"], ev2, ax=axs[1], title="Percentage error", percentage=True)
-
     return axs
+
 
